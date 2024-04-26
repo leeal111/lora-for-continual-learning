@@ -13,7 +13,7 @@ from torch import nn
 from torch.cuda.amp.autocast_mode import autocast
 
 
-def init_routine(args):
+def init_other(args):
     set_random_seed(args.seed)
     args.device = torch.device(
         f"cuda:{args.gpus[0]}" if torch.cuda.is_available() else "cpu"

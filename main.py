@@ -7,7 +7,7 @@ from data_manager import DataManager
 from lora import set_task_index
 from model import load_vit_train_type
 from test import compute_current_accuracy, eval_cnn
-from train import clustering, init_optimizer, init_routine, train
+from train import clustering, init_optimizer, init_other, train
 from utils import init_args, init_logging, weight_file_path
 
 # [120, 48, 125, 24, 6]
