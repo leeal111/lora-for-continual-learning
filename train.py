@@ -105,7 +105,7 @@ def train(
     train_acc = np.around(tensor2numpy(correct) * 100 / total, decimals=2)
 
     logging.info(
-        f"{epoch}    {total_loss:.3f}    {train_acc:.3f}    {correct}    {total}    {this_lr:e}"
+        f"{epoch}  {total_loss:.3f}  {train_acc:.3f}  {correct}  {total}  {this_lr:.3e}"
     )
 
 
