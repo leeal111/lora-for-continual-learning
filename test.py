@@ -95,7 +95,7 @@ def eval_cnn(args, net, loader, kmeans_centers, known_class_num):
     logging.info(f"all_tasks_acc: {all_tasks_acc}")
     logging.info(f"old_task_acc: {old_acc}")
     logging.info(f"current_task_acc: {new_acc}")
-    return mean_acc, all_tasks_acc
+    return len(y_label), mean_acc, all_tasks_acc
 
 
 def compute_accurcy(y_pred, y_label):

@@ -14,24 +14,24 @@ from utils import center_file_path, init_args, init_logging, weight_file_path
 # ["gaugan", "biggan", "wild", "whichfaceisreal", "san"]
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--batch_size", type=int, default=32)
-parser.add_argument("--workers_num", type=int, default=8)
-parser.add_argument("--gpus", type=int, nargs="+", default=[1])
+parser.add_argument("--batch_size", type=int, default=50)
+parser.add_argument("--workers_num", type=int, default=2)
+parser.add_argument("--gpus", type=int, nargs="+", default=[3])
 parser.add_argument("--seed", type=int, default=10)
-parser.add_argument("--lr", type=float, default=5e-4)
-parser.add_argument("--epochs", type=int, default=10)
-parser.add_argument("--rank", type=int, default=10)
+parser.add_argument("--lr", type=float, default=1e-3)
+parser.add_argument("--epochs", type=int, default=1)
+parser.add_argument("--rank", type=int, default=2)
 
 parser.add_argument("--n_clusters", type=int, default=5)
 parser.add_argument("--dataset_path", type=str, default="./datas/CDDB")
 parser.add_argument("--dataset_name", type=str)
 parser.add_argument("--pretrain_model_path", type=str, default="./pths/B_16.pth")
 parser.add_argument("--pretrain_model_name", type=str)
-parser.add_argument("--classes_num", type=int, default=10)
+parser.add_argument("--classes_num", type=int, default=345 * 6)
 parser.add_argument("--tasks_num", type=int, default=5)
 parser.add_argument("--result_path", type=str, default="./results")
 
-parser.add_argument("--class_num_per_task_list", nargs="+")
+parser.add_argument("--class_num_per_task_list", type=int, nargs="+")
 parser.add_argument("--tasks_name", nargs="+")
 parser.add_argument("--tasks_lr_T", type=int, nargs="+")
 
@@ -113,7 +113,6 @@ for task_index in range(cfg.tasks_num):
         model.save_lora_parameters(lora_file_name)
     logging.info(f"<==== Trained")
 
-    # 最优上界分数
     logging.info(f"====> UpperTesting")
     set_task_index(task_index)
     test_acc = compute_current_accuracy(
