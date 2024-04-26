@@ -29,6 +29,7 @@ def init_args(args):
         args.class_num_per_task_list.append(offset)
 
     # make output diretory
+    makedirs(args.result_path)
     args.log_path=join(args.result_path,f"log")
     args.weight_path=join(args.result_path,f"weight")
     args.center_path=join(args.result_path,f"center")
