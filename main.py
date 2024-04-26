@@ -40,4 +40,5 @@ for arg_name, arg_value in cfg.__dict__.items():
     logging.info(f"{arg_name} : {str(arg_value)}")
 logging.info(f"<====")
 
+# load model 
 model = load_vit_train_type(cfg)

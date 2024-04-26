@@ -1,6 +1,7 @@
 # user defined rules
 datas
 results
+pths
 
 # Byte-compiled / optimized files
 __pycache__/
