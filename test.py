@@ -8,7 +8,6 @@ from utils import tensor2numpy
 
 @torch.no_grad()
 def compute_current_accuracy(args, net, loader, known_class_num, accmulate_class_num):
-    logging.info(f"\n\n====> Testing")
     net.eval()
     correct, total = 0, 0
     for _, (_, inputs, targets) in enumerate(loader):

@@ -66,7 +66,7 @@ for task_index in range(cfg.tasks_num):
     # get class tag range
     current_class_num = cfg.class_num_per_task_list[task_index]
     accmulate_class_num = current_class_num + known_class_num
-    logging.info(f"====>")
+    logging.info(f" ")
     logging.info(
         f"====> Learn Task {task_index} with class range: {known_class_num}-{accmulate_class_num}"
     )
@@ -92,7 +92,6 @@ for task_index in range(cfg.tasks_num):
         model.load_lora_parameters(lora_file_name)
         model.to(cfg.device)
     else:
-        logging.info(f"no pth weight")
         logging.info(
             " || ".join(["epoch", "total_loss", "train_acc", "correct", "total", "lr"])
         )
@@ -112,6 +111,7 @@ for task_index in range(cfg.tasks_num):
     logging.info(f"<==== Trained")
 
     # 最优上界分数
+    logging.info(f"====> Testing")
     test_acc = compute_current_accuracy(
         cfg,
         model,
@@ -121,6 +121,7 @@ for task_index in range(cfg.tasks_num):
     )
     upper_accs.append(test_acc)
 
+    logging.info(f"<==== Tested")
     known_class_num = accmulate_class_num
 
 end_time = time.time()
