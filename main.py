@@ -1,6 +1,6 @@
 import argparse
 import logging
-from train import set_random_seed
+from model import load_vit_train_type
 from utils import init_args
 
 # [120, 48, 125, 24, 6]
@@ -39,3 +39,5 @@ logging.info(f"experiment settings:")
 for arg_name, arg_value in cfg.__dict__.items():
     logging.info(f"{arg_name} : {str(arg_value)}")
 logging.info(f"<====")
+
+model = load_vit_train_type(cfg)
