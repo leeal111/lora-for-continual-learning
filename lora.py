@@ -171,9 +171,12 @@ class LoRA_ViT(nn.Module):
         a_tensors = {f"w_a_{i:03d}": self.w_As[i].weight for i in range(num_layer)}
         b_tensors = {f"w_b_{i:03d}": self.w_Bs[i].weight for i in range(num_layer)}
 
-        _in = self.lora_vit.head.in_features
-        _out = self.lora_vit.head.out_features
-        fc_tensors = {f"fc_{_in}in_{_out}out": self.lora_vit.head.weight}
+        _in = self.lora_vit.fc.in_features
+        _out = self.lora_vit.fc.out_features
+        fc_tensors = {
+            f"fc_{_in}in_{_out}out": self.lora_vit.fc.weight,
+            f"fc_{_out}bias": self.lora_vit.fc.bias,
+        }
 
         merged_dict = {**a_tensors, **b_tensors, **fc_tensors}
         save_file(merged_dict, filename)
@@ -197,12 +200,19 @@ class LoRA_ViT(nn.Module):
                 saved_tensor = f.get_tensor(saved_key)
                 w_B_linear.weight = Parameter(saved_tensor)
 
-            _in = self.lora_vit.head.in_features
-            _out = self.lora_vit.head.out_features
+            _in = self.lora_vit.fc.in_features
+            _out = self.lora_vit.fc.out_features
             saved_key = f"fc_{_in}in_{_out}out"
             try:
                 saved_tensor = f.get_tensor(saved_key)
-                self.lora_vit.head.weight = Parameter(saved_tensor)
+                self.lora_vit.fc.weight = Parameter(saved_tensor)
+            except ValueError:
+                print("this fc weight is not for this model")
+
+            saved_key = f"fc_{_out}bias"
+            try:
+                saved_tensor = f.get_tensor(saved_key)
+                self.lora_vit.fc.bias = Parameter(saved_tensor)
             except ValueError:
                 print("this fc weight is not for this model")
 
@@ -211,6 +221,7 @@ class LoRA_ViT(nn.Module):
             nn.init.kaiming_uniform_(w_A.weight, a=math.sqrt(5))
         for w_B in self.w_Bs:
             nn.init.zeros_(w_B.weight)
+        nn.init.zeros_(w_B.weight)
 
     def forward(self, x: Tensor) -> Tensor:
         return self.lora_vit(x)
