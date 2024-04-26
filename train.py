@@ -19,6 +19,7 @@ def init_other(args):
     args.device = torch.device(
         f"cuda:{args.gpus[0]}" if torch.cuda.is_available() else "cpu"
     )
+    args.scaler = GradScaler()
 
 
 def init_optimizer(args, net, task_index):
@@ -69,9 +70,15 @@ def set_random_seed(seed: int) -> None:
 
 
 def train(
-    args, epoch, net, loader, optimizer, scheduler, known_class_num, accmulate_class_num
+    args,
+    epoch,
+    net,
+    loader,
+    optimizer,
+    scheduler,
+    known_class_num,
+    accmulate_class_num,
 ):
-    scaler = GradScaler()
     loss_func = nn.CrossEntropyLoss().to(args.device)
     total_loss = 0.0
     correct, total = 0, 0
@@ -91,11 +98,9 @@ def train(
             # A_loss=net
             loss = cls_loss
 
-        scaler.scale(loss).backward()
-        scaler.step(optimizer)
-        scaler.update()
-        # loss.backward()
-        # optimizer.step()
+        args.scaler.scale(loss).backward()
+        args.step(optimizer)
+        args.update()
         scheduler.step()
 
         total_loss += loss.item()
