@@ -81,9 +81,9 @@ def center_file_path(cfg, task_index):
     param_list=["dataset_name","train_type","tasks_num","rank","seed","epochs","tasks_lr_T"]
     param_str = get_param_str(cfg,param_list)
     if infer_task_index==-1:
-        unique_file_str = f"{infer_task_index}_{task_index}.npy"
+        unique_file_str = f"{infer_task_index}_{cfg.classes_num}_{task_index}.npy"
     else:
-        unique_file_str = f"{infer_task_index}_{param_str}_{task_index}.npy"
+        unique_file_str = f"{infer_task_index}_{cfg.classes_num}_{param_str}_{task_index}.npy"
     file_name = join(cfg.center_path, unique_file_str)
     return file_name
 
