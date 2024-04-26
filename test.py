@@ -60,6 +60,7 @@ def eval_cnn(args, net, loader, kmeans_centers, known_class_num):
             # logging.info(f"{min_idxs.cpu().detach().numpy()}")
             for idx in range(current_task_num):
                 set_task_index(idx)
+                # mask = (min_idxs == idx).nonzero().view(-1)
                 mask = (targets // 2 == idx).nonzero().view(-1)
                 if len(mask) == 0:
                     continue

@@ -105,10 +105,9 @@ def train(
     train_acc = np.around(tensor2numpy(correct) * 100 / total, decimals=2)
 
     logging.info(
-        "    ".join(
-            [str(x) for x in [epoch, total_loss, train_acc, correct, total, this_lr]]
-        )
+        f"{epoch}    {total_loss:.3f}    {train_acc:.3f}    {correct}    {total}    {this_lr:e}"
     )
+
 
 @torch.no_grad()
 def clustering(args, net, loader, task_index):

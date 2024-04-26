@@ -4,6 +4,7 @@ import time
 from os.path import exists
 import numpy as np
 from data_manager import DataManager
+from lora import set_task_index
 from model import load_vit_train_type
 from test import compute_current_accuracy, eval_cnn
 from train import clustering, init_optimizer, init_routine, train
@@ -97,6 +98,7 @@ for task_index in range(cfg.tasks_num):
         logging.info(
             " || ".join(["epoch", "total_loss", "train_acc", "correct", "total", "lr"])
         )
+        set_task_index(task_index)
         for epoch in range(1, cfg.epochs + 1):
             train(
                 cfg,
@@ -113,6 +115,7 @@ for task_index in range(cfg.tasks_num):
 
     # 最优上界分数
     logging.info(f"====> UpperTesting")
+    set_task_index(task_index)
     test_acc = compute_current_accuracy(
         cfg,
         model,
@@ -123,18 +126,20 @@ for task_index in range(cfg.tasks_num):
     upper_accs.append(test_acc)
     logging.info(f"<==== UpperTested")
 
-    logging.info(f"====> Clustering")
+    # logging.info(f"====> Clustering")
+    set_task_index(-1)
     centers = clustering(cfg, model, train_loader, task_index)
     kmeans_centers.append(centers)
-    logging.info(f"<==== Clustered")
+    # logging.info(f"<==== Clustered")
 
-    logging.info(f"====> DomainTesting")
+    # logging.info(f"====> DomainTesting")
     mean_acc, tasks_acc = eval_cnn(
         cfg, model, test_loader, kmeans_centers, known_class_num
     )
-    logging.info(f"<==== DomainTested")
     tasks_accs.append(tasks_acc)
     mean_accs.append(mean_acc)
+    logging.info(f"<==== DomainTested")
+    
 
     known_class_num = accmulate_class_num
 
