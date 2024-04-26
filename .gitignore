@@ -1,0 +1,91 @@
+# user defined rules
+datas
+results
+
+# Byte-compiled / optimized files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+*.egg
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.coverage
+.tox/
+.noseid/
+nosetests.xml
+
+# Django specific
+*.log
+local_settings.py
+
+# Sphinx documentation
+docs/_build/
+
+# PyCharm
+.idea/
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# Virtual environment
+venv/
+env/
+
+# Miscellaneous
+*.swp
+*~
+.DS_Store
+
+# Byte-compiled / optimized files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+*.egg
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.coverage
+.tox/
+.noseid/
+nosetests.xml
+
+# Django specific
+*.log
+local_settings.py
+
+# Sphinx documentation
+docs/_build/
+
+# PyCharm
+.idea/
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# Virtual environment
+venv/
+env/
+
+# Miscellaneous
+*.swp
+*~
+.DS_Store
