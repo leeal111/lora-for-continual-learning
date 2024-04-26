@@ -88,7 +88,6 @@ for task_index in range(cfg.tasks_num):
     fc_file_name, lora_file_name = weight_file_path(cfg, task_index)
     if exists(fc_file_name) and exists(lora_file_name):
         logging.info(f"load pth weight")
-        model.load_fc_parameters(fc_file_name)
         model.load_lora_parameters(lora_file_name)
         model.to(cfg.device)
     else:
