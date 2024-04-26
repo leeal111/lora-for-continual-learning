@@ -126,20 +126,19 @@ for task_index in range(cfg.tasks_num):
     upper_accs.append(test_acc)
     logging.info(f"<==== UpperTested")
 
-    # logging.info(f"====> Clustering")
+    logging.info(f"====> Clustering")
     set_task_index(-1)
     centers = clustering(cfg, model, train_loader, task_index)
     kmeans_centers.append(centers)
-    # logging.info(f"<==== Clustered")
+    logging.info(f"<==== Clustered")
 
-    # logging.info(f"====> DomainTesting")
+    logging.info(f"====> DomainTesting")
     mean_acc, tasks_acc = eval_cnn(
         cfg, model, test_loader, kmeans_centers, known_class_num
     )
     tasks_accs.append(tasks_acc)
     mean_accs.append(mean_acc)
     logging.info(f"<==== DomainTested")
-    
 
     known_class_num = accmulate_class_num
 
