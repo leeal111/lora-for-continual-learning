@@ -66,6 +66,7 @@ tasks_accs = []
 mean_accs = []
 
 for task_index in range(cfg.tasks_num):
+    task_start_time = time.time()
 
     # get class tag range
     current_class_num = cfg.class_num_per_task_list[task_index]
@@ -141,7 +142,10 @@ for task_index in range(cfg.tasks_num):
     logging.info(f"<==== DomainTested")
 
     known_class_num = accmulate_class_num
-
+    task_end_time = time.time()
+    logging.info(
+        f"\n====> task {task_index} time: {(task_end_time - task_start_time)/60} m"
+    )
 end_time = time.time()
 logging.info(f"\n====> Total time: {(end_time - start_time)/60/60} h")
 logging.info(f"\n====> Upper acc: {upper_accs}")
