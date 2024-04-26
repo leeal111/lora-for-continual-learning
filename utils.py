@@ -61,9 +61,8 @@ def weight_file_path(cfg, task_index):
     param_list=["dataset_name","train_type","tasks_num","rank","seed","epochs","tasks_lr_T"]
     param_str = get_param_str(cfg,param_list)
     unique_file_str = f"{param_str}_{task_index}.safetensors"
-    fc_file_name = join(cfg.weight_path, "fc_" + unique_file_str)
     lora_file_name = join(cfg.weight_path, "lora_" + unique_file_str)
-    return fc_file_name, lora_file_name
+    return lora_file_name
 
 def get_param_str(cfg,param_list):
     param_values=[]

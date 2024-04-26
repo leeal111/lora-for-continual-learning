@@ -89,8 +89,8 @@ for task_index in range(cfg.tasks_num):
     # 准备训练
     optimizer, scheduler = init_optimizer(cfg, model, task_index)
     logging.info(f"====> Training")
-    fc_file_name, lora_file_name = weight_file_path(cfg, task_index)
-    if exists(fc_file_name) and exists(lora_file_name):
+    lora_file_name = weight_file_path(cfg, task_index)
+    if  exists(lora_file_name):
         logging.info(f"load pth weight")
         model.load_lora_parameters(lora_file_name)
         model.to(cfg.device)
