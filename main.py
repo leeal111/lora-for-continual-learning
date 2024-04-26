@@ -63,7 +63,7 @@ upper_accs = []
 kmeans_centers = []
 tasks_accs = []
 mean_accs = []
-
+total_nums = []
 for task_index in range(cfg.tasks_num):
     task_start_time = time.time()
 
@@ -134,20 +134,22 @@ for task_index in range(cfg.tasks_num):
     logging.info(f"<==== Clustered")
 
     logging.info(f"====> DomainTesting")
-    mean_acc, tasks_acc = eval_cnn(
+    total_num, mean_acc, tasks_acc = eval_cnn(
         cfg, model, test_loader, kmeans_centers, known_class_num
     )
     tasks_accs.append(tasks_acc)
     mean_accs.append(mean_acc)
+    total_nums.append(total_num)
     logging.info(f"<==== DomainTested")
 
     known_class_num = accmulate_class_num
     task_end_time = time.time()
     logging.info(
-        f"\n====> task {task_index} time: {(task_end_time - task_start_time)/60} m"
+        f"====> task {task_index} time: {(task_end_time - task_start_time)/60} m"
     )
 end_time = time.time()
-logging.info(f"\n====> Total time: {(end_time - start_time)/60/60} h")
-logging.info(f"\n====> Upper acc: {upper_accs}")
-logging.info(f"\n====> Tasks acc: {tasks_accs}")
-logging.info(f"\n====> Mean acc: {mean_accs}")
+logging.info(f"====> Total time: {(end_time - start_time)/60/60} h")
+logging.info(f"====> Upper acc: {upper_accs}")
+logging.info(f"====> Tasks acc: {tasks_accs}")
+logging.info(f"====> Mean acc: {mean_accs}")
+logging.info(f"====> Total num: {total_nums}")
