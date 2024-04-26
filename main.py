@@ -41,7 +41,7 @@ parser.add_argument("--train_type", type=str, default="lora", choices=["lora"])
 cfg = parser.parse_args()
 init_args(cfg)
 init_logging(cfg.log_path)
-init_routine(cfg)
+init_other(cfg)
 
 logging.info(f"====>")
 logging.info(f"experiment settings:")
@@ -70,7 +70,7 @@ for task_index in range(cfg.tasks_num):
     # get class tag range
     current_class_num = cfg.class_num_per_task_list[task_index]
     accmulate_class_num = current_class_num + known_class_num
-    logging.info(f" ")
+    logging.info(f"    {task_index}")
     logging.info(
         f"====> Learn Task {task_index} with class range: {known_class_num}-{accmulate_class_num}"
     )
