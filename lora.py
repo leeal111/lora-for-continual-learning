@@ -23,6 +23,11 @@ def set_task_index(index):
     G_task_index = index
 
 
+def get_task_index():
+    global G_task_index
+    return G_task_index
+
+
 class _LoRALayer(nn.Module):
     def __init__(self, w: nn.Module, w_a: nn.Module, w_b: nn.Module):
         super().__init__()

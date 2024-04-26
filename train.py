@@ -11,6 +11,7 @@ from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.cuda.amp.grad_scaler import GradScaler
 from torch import nn
 from torch.cuda.amp.autocast_mode import autocast
+from os.path import exists
 
 
 def init_other(args):
@@ -112,17 +113,23 @@ def train(
 
 
 @torch.no_grad()
-def clustering(args, net, loader, task_index):
-    net.eval()
-    features = []
-    for _, (_, inputs, targets) in enumerate(loader):
-        inputs, targets = inputs.to(args.device), targets.to(args.device)
-        with torch.no_grad():
-            feature, _ = net(inputs)
-        features.append(feature.cpu())
-    features = torch.cat(features, 0).cpu().detach().numpy()
-    clustering = KMeans(
-        n_clusters=args.n_clusters, random_state=args.seed, n_init=10
-    ).fit(features)
-    centers = clustering.cluster_centers_
+def clustering(args, net, loader, path):
+    if exists(path):
+        logging.info(f"load center data")
+        centers = np.load(path)
+    else:
+        logging.info(f"search center data")
+        net.eval()
+        features = []
+        for _, (_, inputs, targets) in enumerate(loader):
+            inputs, targets = inputs.to(args.device), targets.to(args.device)
+            with torch.no_grad():
+                feature, _ = net(inputs)
+            features.append(feature.cpu())
+        features = torch.cat(features, 0).cpu().detach().numpy()
+        clustering = KMeans(
+            n_clusters=args.n_clusters, random_state=args.seed, n_init=10
+        ).fit(features)
+        centers = clustering.cluster_centers_
+        np.save(path, centers)
     return torch.tensor(centers).to(args.device)

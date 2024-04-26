@@ -8,7 +8,7 @@ from lora import set_task_index
 from model import load_vit_train_type
 from test import compute_current_accuracy, eval_cnn
 from train import clustering, init_optimizer, init_other, train
-from utils import init_args, init_logging, weight_file_path
+from utils import center_file_path, init_args, init_logging, weight_file_path
 
 # [120, 48, 125, 24, 6]
 # ["gaugan", "biggan", "wild", "whichfaceisreal", "san"]
@@ -128,7 +128,8 @@ for task_index in range(cfg.tasks_num):
 
     logging.info(f"====> Clustering")
     set_task_index(-1)
-    centers = clustering(cfg, model, train_loader, task_index)
+    center_file_name = center_file_path(cfg, task_index)
+    centers = clustering(cfg, model, train_loader, task_index, center_file_name)
     kmeans_centers.append(centers)
     logging.info(f"<==== Clustered")
 

@@ -3,6 +3,8 @@ from os import makedirs
 from os.path import join,basename,splitext
 import time
 
+from lora import get_task_index
+
 def init_args(args):
 
     # input verify
@@ -75,4 +77,14 @@ def get_param_str(cfg,param_list):
 def tensor2numpy(x):
     return x.cpu().data.numpy() if x.is_cuda else x.data.numpy()
 
+def center_file_path(cfg, task_index):
+    infer_task_index=get_task_index()
+    param_list=["dataset_name","train_type","tasks_num","rank","seed","epochs","tasks_lr_T"]
+    param_str = get_param_str(cfg,param_list)
+    if infer_task_index==-1:
+        unique_file_str = f"{infer_task_index}_{task_index}.npy"
+    else:
+        unique_file_str = f"{infer_task_index}_{param_str}_{task_index}.npy"
+    file_name = join(cfg.center_path, unique_file_str)
+    return file_name
 
