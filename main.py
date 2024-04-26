@@ -1,5 +1,8 @@
 import argparse
 import logging
+
+import numpy as np
+from data_manager import DataManager
 from model import load_vit_train_type
 from utils import init_args, init_logging
 
@@ -43,3 +46,10 @@ logging.info(f"<====")
 
 # load model
 model = load_vit_train_type(cfg)
+
+data_manager = DataManager(cfg)
+
+for batsh in data_manager.get_dataloader(
+    cfg, np.arange(0, 2), source="train", mode="train"
+):
+    print(batsh[1])
