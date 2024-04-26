@@ -110,7 +110,7 @@ def train(
         )
     )
 
-
+@torch.no_grad()
 def clustering(args, net, loader, task_index):
     net.eval()
     features = []

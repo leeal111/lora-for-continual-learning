@@ -5,8 +5,8 @@ from os.path import exists
 import numpy as np
 from data_manager import DataManager
 from model import load_vit_train_type
-from test import compute_current_accuracy
-from train import init_optimizer, init_routine, train
+from test import compute_current_accuracy, eval_cnn
+from train import clustering, init_optimizer, init_routine, train
 from utils import init_args, init_logging, weight_file_path
 
 # [120, 48, 125, 24, 6]
@@ -60,6 +60,9 @@ model.to(cfg.device)
 start_time = time.time()
 known_class_num = 0
 upper_accs = []
+kmeans_centers = []
+tasks_accs = []
+mean_accs = []
 
 for task_index in range(cfg.tasks_num):
 
@@ -83,8 +86,8 @@ for task_index in range(cfg.tasks_num):
     )
 
     # 准备训练
-    logging.info(f"====> Training")
     optimizer, scheduler = init_optimizer(cfg, model, task_index)
+    logging.info(f"====> Training")
     fc_file_name, lora_file_name = weight_file_path(cfg, task_index)
     if exists(fc_file_name) and exists(lora_file_name):
         logging.info(f"load pth weight")
@@ -121,8 +124,22 @@ for task_index in range(cfg.tasks_num):
     logging.info(f"<==== UpperTested")
 
     logging.info(f"====> Clustering")
+    centers = clustering(cfg, model, train_loader, task_index)
+    kmeans_centers.append(centers)
+    logging.info(f"<==== Clustered")
+
+    logging.info(f"====> DomainTesting")
+    mean_acc, tasks_acc = eval_cnn(
+        cfg, model, test_loader, kmeans_centers, known_class_num
+    )
+    logging.info(f"<==== DomainTested")
+    tasks_accs.append(tasks_acc)
+    mean_accs.append(mean_acc)
+
     known_class_num = accmulate_class_num
 
 end_time = time.time()
 logging.info(f"\n====> Total time: {(end_time - start_time)/60/60} h")
 logging.info(f"\n====> Upper acc: {upper_accs}")
+logging.info(f"\n====> Tasks acc: {tasks_accs}")
+logging.info(f"\n====> Mean acc: {mean_accs}")
