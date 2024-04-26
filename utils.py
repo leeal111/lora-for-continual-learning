@@ -35,9 +35,7 @@ def init_args(args):
     makedirs(args.log_path, exist_ok=True)
     makedirs(args.weight_path, exist_ok=True)
     makedirs(args.weight_path, exist_ok=True)
-
-    # other
-    init_logging(args.log_path)
+    
     
 
 def init_logging(result_path):

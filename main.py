@@ -1,7 +1,7 @@
 import argparse
 import logging
 from model import load_vit_train_type
-from utils import init_args
+from utils import init_args, init_logging
 
 # [120, 48, 125, 24, 6]
 # ["gaugan", "biggan", "wild", "whichfaceisreal", "san"]
@@ -33,6 +33,7 @@ parser.add_argument("--train_type", type=str, default="lora", choices=["lora"])
 
 cfg = parser.parse_args()
 init_args(cfg)
+init_logging(cfg.log_path)
 
 logging.info(f"====>")
 logging.info(f"experiment settings:")
@@ -40,5 +41,5 @@ for arg_name, arg_value in cfg.__dict__.items():
     logging.info(f"{arg_name} : {str(arg_value)}")
 logging.info(f"<====")
 
-# load model 
+# load model
 model = load_vit_train_type(cfg)
