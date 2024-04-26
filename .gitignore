@@ -2,6 +2,7 @@
 datas
 results
 pths
+.vscode
 
 # Byte-compiled / optimized files
 __pycache__/
