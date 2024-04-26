@@ -90,7 +90,7 @@ for task_index in range(cfg.tasks_num):
     optimizer, scheduler = init_optimizer(cfg, model, task_index)
     logging.info(f"====> Training")
     lora_file_name = weight_file_path(cfg, task_index)
-    if  exists(lora_file_name):
+    if exists(lora_file_name):
         logging.info(f"load pth weight")
         model.load_lora_parameters(lora_file_name)
         model.to(cfg.device)
@@ -129,7 +129,7 @@ for task_index in range(cfg.tasks_num):
     logging.info(f"====> Clustering")
     set_task_index(-1)
     center_file_name = center_file_path(cfg, task_index)
-    centers = clustering(cfg, model, train_loader, task_index, center_file_name)
+    centers = clustering(cfg, model, train_loader, center_file_name)
     kmeans_centers.append(centers)
     logging.info(f"<==== Clustered")
 

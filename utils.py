@@ -36,7 +36,7 @@ def init_args(args):
     args.center_path=join(args.result_path,f"center")
     makedirs(args.log_path, exist_ok=True)
     makedirs(args.weight_path, exist_ok=True)
-    makedirs(args.weight_path, exist_ok=True)
+    makedirs(args.center_path, exist_ok=True)
 
 def init_logging(result_path):
     logger = logging.getLogger("")
