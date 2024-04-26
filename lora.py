@@ -226,7 +226,6 @@ class LoRA_ViT(nn.Module):
             nn.init.kaiming_uniform_(w_A.weight, a=math.sqrt(5))
         for w_B in self.w_Bs:
             nn.init.zeros_(w_B.weight)
-        nn.init.zeros_(w_B.weight)
 
     def forward(self, x: Tensor) -> Tensor:
         return self.lora_vit(x)
