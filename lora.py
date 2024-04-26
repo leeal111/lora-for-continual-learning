@@ -15,6 +15,13 @@ from torch.nn.parameter import Parameter
 
 from base_vit import ViT
 
+G_task_index = -1
+
+
+def set_task_index(index):
+    global G_task_index
+    G_task_index = index
+
 
 class _LoRALayer(nn.Module):
     def __init__(self, w: nn.Module, w_a: nn.Module, w_b: nn.Module):
@@ -24,7 +31,10 @@ class _LoRALayer(nn.Module):
         self.w_b = w_b
 
     def forward(self, x):
-        x = self.w(x) + self.w_b(self.w_a(x))
+        if G_task_index == -1:
+            x = self.w(x)
+        else:
+            x = self.w(x) + self.w_b[G_task_index](self.w_a[G_task_index](x))
         return x
 
 
@@ -45,7 +55,14 @@ class LoRA_ViT(nn.Module):
         torch.Size([1, 1000])
     """
 
-    def __init__(self, vit_model: ViT, r: int, num_classes: int = 0, lora_layer=None):
+    def __init__(
+        self,
+        vit_model: ViT,
+        r: int,
+        num_classes: int = 0,
+        num_tasks: int = 0,
+        lora_layer=None,
+    ):
         super(LoRA_ViT, self).__init__()
 
         assert r > 0
@@ -70,16 +87,34 @@ class LoRA_ViT(nn.Module):
                 continue
             w_q_linear = blk.attn.proj_q
             w_v_linear = blk.attn.proj_v
-            w_a_linear_q = nn.Linear(dim, r, bias=False)
-            w_b_linear_q = nn.Linear(r, dim, bias=False)
-            w_a_linear_v = nn.Linear(dim, r, bias=False)
-            w_b_linear_v = nn.Linear(r, dim, bias=False)
-            self.w_As.append(w_a_linear_q)
-            self.w_Bs.append(w_b_linear_q)
-            self.w_As.append(w_a_linear_v)
-            self.w_Bs.append(w_b_linear_v)
-            blk.attn.proj_q = _LoRALayer(w_q_linear, w_a_linear_q, w_b_linear_q)
-            blk.attn.proj_v = _LoRALayer(w_v_linear, w_a_linear_v, w_b_linear_v)
+
+            w_a_linear_q_list = nn.ModuleList()
+            w_b_linear_q_list = nn.ModuleList()
+            w_a_linear_v_list = nn.ModuleList()
+            w_b_linear_v_list = nn.ModuleList()
+            for _ in range(num_tasks):
+
+                w_a_linear_q = nn.Linear(dim, r, bias=False)
+                w_b_linear_q = nn.Linear(r, dim, bias=False)
+                w_a_linear_v = nn.Linear(dim, r, bias=False)
+                w_b_linear_v = nn.Linear(r, dim, bias=False)
+
+                w_a_linear_q_list.append(w_a_linear_q)
+                w_b_linear_q_list.append(w_b_linear_q)
+                w_a_linear_v_list.append(w_a_linear_v)
+                w_b_linear_v_list.append(w_b_linear_v)
+
+                self.w_As.append(w_a_linear_q)
+                self.w_Bs.append(w_b_linear_q)
+                self.w_As.append(w_a_linear_v)
+                self.w_Bs.append(w_b_linear_v)
+
+            blk.attn.proj_q = _LoRALayer(
+                w_q_linear, w_a_linear_q_list, w_b_linear_q_list
+            )
+            blk.attn.proj_v = _LoRALayer(
+                w_v_linear, w_a_linear_v_list, w_b_linear_v_list
+            )
 
         self.reset_parameters()
         self.lora_vit = vit_model
@@ -94,7 +129,10 @@ class LoRA_ViT(nn.Module):
         assert filename.endswith(".safetensors")
         _in = self.lora_vit.fc.in_features
         _out = self.lora_vit.fc.out_features
-        fc_tensors = {f"fc_{_in}in_{_out}out": self.lora_vit.fc.weight}
+        fc_tensors = {
+            f"fc_{_in}in_{_out}out": self.lora_vit.fc.weight,
+            f"fc_{_out}bias": self.lora_vit.fc.bias,
+        }
         save_file(fc_tensors, filename)
 
     def load_fc_parameters(self, filename: str) -> None:
@@ -111,6 +149,13 @@ class LoRA_ViT(nn.Module):
             try:
                 saved_tensor = f.get_tensor(saved_key)
                 self.lora_vit.fc.weight = Parameter(saved_tensor)
+            except ValueError:
+                print("this fc weight is not for this model")
+
+            saved_key = f"fc_{_out}bias"
+            try:
+                saved_tensor = f.get_tensor(saved_key)
+                self.lora_vit.fc.bias = Parameter(saved_tensor)
             except ValueError:
                 print("this fc weight is not for this model")
 

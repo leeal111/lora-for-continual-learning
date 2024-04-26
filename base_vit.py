@@ -515,5 +515,6 @@ class ViT(nn.Module):
             x = torch.tanh(x)
         if hasattr(self, "fc"):
             x = self.norm(x)[:, 0]  # b,d
+            fea = x.clone().detach()
             x = self.fc(x)  # b,num_classes
-        return x
+        return fea, x
