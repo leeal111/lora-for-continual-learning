@@ -10,6 +10,7 @@ from utils import print_trainable_size, tensor2numpy
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.cuda.amp.grad_scaler import GradScaler
 from torch import nn
+from torch.cuda.amp.autocast_mode import autocast
 
 
 def init_routine(args):
@@ -69,7 +70,7 @@ def set_random_seed(seed: int) -> None:
 def train(
     args, epoch, net, loader, optimizer, scheduler, known_class_num, accmulate_class_num
 ):
-    # scaler = GradScaler()
+    scaler = GradScaler()
     loss_func = nn.CrossEntropyLoss().to(args.device)
     total_loss = 0.0
     correct, total = 0, 0
@@ -81,18 +82,19 @@ def train(
 
         loss = 0.0
         optimizer.zero_grad()
-        # with autocast(enabled=True):
-        _, pred = net(images)
-        pred[:, 0:known_class_num] = -float("inf")
-        pred[:, accmulate_class_num:] = -float("inf")
-        cls_loss = loss_func(pred, labels)
-        loss = cls_loss
+        with autocast(enabled=True):
+            _, pred = net(images)
+            pred[:, 0:known_class_num] = -float("inf")
+            pred[:, accmulate_class_num:] = -float("inf")
+            cls_loss = loss_func(pred, labels)
+            # A_loss=net
+            loss = cls_loss
 
-        # scaler.scale(loss).backward()
-        # scaler.step(optimizer)
-        # scaler.update()
-        loss.backward()
-        optimizer.step()
+        scaler.scale(loss).backward()
+        scaler.step(optimizer)
+        scaler.update()
+        # loss.backward()
+        # optimizer.step()
         scheduler.step()
 
         total_loss += loss.item()
