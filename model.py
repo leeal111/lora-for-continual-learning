@@ -4,6 +4,8 @@ from base_vit import ViT
 from lora import LoRA_ViT
 from torch import nn
 
+from utils import print_trainable_size
+
 
 def load_vit(args):
     model = ViT(args.pretrain_model_name)
@@ -36,6 +38,4 @@ def load_vit_train_type(args):
     return model
 
 
-def print_trainable_size(name, param):
-    num_params = sum(p.numel() for p in param if p.requires_grad)
-    logging.info(f"{name} trainable size: {num_params / 2**20:.4f}M")
+

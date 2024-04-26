@@ -52,6 +52,10 @@ def init_logging(result_path):
         formatter = logging.Formatter("[%(asctime)s-%(levelname)s] %(message)s")
         console.setFormatter(formatter)
         logger.addHandler(console)
+
+def print_trainable_size(name, param):
+    num_params = sum(p.numel() for p in param if p.requires_grad)
+    logging.info(f"{name} trainable size: {num_params / 2**20:.4f}M")
     
 
 
