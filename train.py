@@ -99,8 +99,8 @@ def train(
             loss = cls_loss
 
         args.scaler.scale(loss).backward()
-        args.step(optimizer)
-        args.update()
+        args.scaler.step(optimizer)
+        args.scaler.update()
         scheduler.step()
 
         total_loss += loss.item()
