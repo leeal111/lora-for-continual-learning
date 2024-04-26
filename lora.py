@@ -125,11 +125,11 @@ class LoRA_ViT(nn.Module):
         num_layer = len(self.w_As)  # actually, it is half
         a_tensors = {f"w_a_{i:03d}": self.w_As[i].weight for i in range(num_layer)}
         b_tensors = {f"w_b_{i:03d}": self.w_Bs[i].weight for i in range(num_layer)}
-        
+
         _in = self.lora_vit.head.in_features
         _out = self.lora_vit.head.out_features
         fc_tensors = {f"fc_{_in}in_{_out}out": self.lora_vit.head.weight}
-        
+
         merged_dict = {**a_tensors, **b_tensors, **fc_tensors}
         save_file(merged_dict, filename)
 
@@ -151,7 +151,7 @@ class LoRA_ViT(nn.Module):
                 saved_key = f"w_b_{i:03d}"
                 saved_tensor = f.get_tensor(saved_key)
                 w_B_linear.weight = Parameter(saved_tensor)
-                
+
             _in = self.lora_vit.head.in_features
             _out = self.lora_vit.head.out_features
             saved_key = f"fc_{_in}in_{_out}out"
@@ -208,7 +208,9 @@ class _LoRA_qkv_timm(nn.Module):
 
 
 class LoRA_ViT_timm(nn.Module):
-    def __init__(self, vit_model: timm_ViT, r: int, num_classes: int = 0, lora_layer=None):
+    def __init__(
+        self, vit_model: timm_ViT, r: int, num_classes: int = 0, lora_layer=None
+    ):
         super(LoRA_ViT_timm, self).__init__()
 
         assert r > 0
@@ -288,7 +290,7 @@ class LoRA_ViT_timm(nn.Module):
         r"""Only safetensors is supported now.
 
         pip install safetensor if you do not have one installed yet.
-        
+
         save both lora and fc parameters.
         """
 
@@ -297,11 +299,11 @@ class LoRA_ViT_timm(nn.Module):
         num_layer = len(self.w_As)  # actually, it is half
         a_tensors = {f"w_a_{i:03d}": self.w_As[i].weight for i in range(num_layer)}
         b_tensors = {f"w_b_{i:03d}": self.w_Bs[i].weight for i in range(num_layer)}
-        
+
         _in = self.lora_vit.head.in_features
         _out = self.lora_vit.head.out_features
         fc_tensors = {f"fc_{_in}in_{_out}out": self.lora_vit.head.weight}
-        
+
         merged_dict = {**a_tensors, **b_tensors, **fc_tensors}
         save_file(merged_dict, filename)
 
@@ -325,7 +327,7 @@ class LoRA_ViT_timm(nn.Module):
                 saved_key = f"w_b_{i:03d}"
                 saved_tensor = f.get_tensor(saved_key)
                 w_B_linear.weight = Parameter(saved_tensor)
-                
+
             _in = self.lora_vit.head.in_features
             _out = self.lora_vit.head.out_features
             saved_key = f"fc_{_in}in_{_out}out"
@@ -359,7 +361,7 @@ if __name__ == "__main__":  # Debug
     pred = lora_vit(img)
     print(pred.shape)
 
-    img = torch.randn(2*20, 3, 224, 224)
+    img = torch.randn(2 * 20, 3, 224, 224)
     model = timm.create_model("vit_base_patch16_224", pretrained=True)
     lora_vit = LoRA_ViT_timm(vit_model=model, r=4, num_classes=10)
     pred = lora_vit.forward3D(img)
