@@ -41,6 +41,7 @@ parser.add_argument("--train_type", type=str, default="lora", choices=["lora"])
 cfg = parser.parse_args()
 init_args(cfg)
 init_logging(cfg.log_path)
+init_routine(cfg)
 
 logging.info(f"====>")
 logging.info(f"experiment settings:")
@@ -50,13 +51,11 @@ logging.info(f"<====")
 
 # load model
 model = load_vit_train_type(cfg)
+model.to(cfg.device)
 
 # load data_manager
 data_manager = DataManager(cfg)
 
-# routine start
-init_routine(cfg)
-model.to(cfg.device)
 
 start_time = time.time()
 known_class_num = 0
