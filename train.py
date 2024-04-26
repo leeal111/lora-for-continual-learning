@@ -3,6 +3,7 @@ import os
 import random
 
 import numpy as np
+from sklearn.cluster import KMeans
 import torch
 import torch.optim as optim
 from utils import print_trainable_size, tensor2numpy
@@ -108,3 +109,19 @@ def train(
             [str(x) for x in [epoch, total_loss, train_acc, correct, total, this_lr]]
         )
     )
+
+
+def clustering(args, net, loader, task_index):
+    net.eval()
+    features = []
+    for _, (_, inputs, targets) in enumerate(loader):
+        inputs, targets = inputs.to(args.device), targets.to(args.device)
+        with torch.no_grad():
+            feature, _ = net(inputs)
+        features.append(feature.cpu())
+    features = torch.cat(features, 0).cpu().detach().numpy()
+    clustering = KMeans(
+        n_clusters=args.n_clusters, random_state=args.seed, n_init=10
+    ).fit(features)
+    centers = clustering.cluster_centers_
+    return torch.tensor(centers).to(args.device)

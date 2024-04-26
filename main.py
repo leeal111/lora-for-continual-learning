@@ -109,7 +109,7 @@ for task_index in range(cfg.tasks_num):
     logging.info(f"<==== Trained")
 
     # 最优上界分数
-    logging.info(f"====> Testing")
+    logging.info(f"====> UpperTesting")
     test_acc = compute_current_accuracy(
         cfg,
         model,
@@ -118,8 +118,9 @@ for task_index in range(cfg.tasks_num):
         accmulate_class_num,
     )
     upper_accs.append(test_acc)
+    logging.info(f"<==== UpperTested")
 
-    logging.info(f"<==== Tested")
+    logging.info(f"====> Clustering")
     known_class_num = accmulate_class_num
 
 end_time = time.time()
