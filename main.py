@@ -31,7 +31,7 @@ parser.add_argument("--classes_num", type=int, default=345 * 6)
 parser.add_argument("--tasks_num", type=int, default=5)
 parser.add_argument("--result_path", type=str, default="./results")
 
-parser.add_argument("--class_num_per_task_list", type=int, nargs="+")
+parser.add_argument("--class_num_per_task_list", nargs="+")
 parser.add_argument("--tasks_name", nargs="+")
 parser.add_argument("--tasks_lr_T", type=int, nargs="+")
 
