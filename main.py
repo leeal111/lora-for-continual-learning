@@ -1,10 +1,13 @@
 import argparse
 import logging
-
+import time
+from os.path import exists
 import numpy as np
 from data_manager import DataManager
 from model import load_vit_train_type
-from utils import init_args, init_logging
+from test import compute_current_accuracy
+from train import init_optimizer, init_routine, train
+from utils import init_args, init_logging, weight_file_path
 
 # [120, 48, 125, 24, 6]
 # ["gaugan", "biggan", "wild", "whichfaceisreal", "san"]
@@ -29,7 +32,7 @@ parser.add_argument("--result_path", type=str, default="./results")
 
 parser.add_argument("--class_num_per_task_list", nargs="+")
 parser.add_argument("--tasks_name", nargs="+")
-parser.add_argument("--tasks_lr_T", nargs="+")
+parser.add_argument("--tasks_lr_T", type=int, nargs="+")
 
 
 parser.add_argument("--train_type", type=str, default="lora", choices=["lora"])
@@ -47,9 +50,79 @@ logging.info(f"<====")
 # load model
 model = load_vit_train_type(cfg)
 
+# load data_manager
 data_manager = DataManager(cfg)
 
-for batsh in data_manager.get_dataloader(
-    cfg, np.arange(0, 2), source="train", mode="train"
-):
-    print(batsh[1])
+# routine start
+init_routine(cfg)
+model.to(cfg.device)
+
+start_time = time.time()
+known_class_num = 0
+upper_accs = []
+
+for task_index in range(cfg.tasks_num):
+
+    # get class tag range
+    current_class_num = cfg.class_num_per_task_list[task_index]
+    accmulate_class_num = current_class_num + known_class_num
+    logging.info(f"====>")
+    logging.info(
+        f"====> Learn Task {task_index} with class range: {known_class_num}-{accmulate_class_num}"
+    )
+
+    # load data
+    train_loader = data_manager.get_dataloader(
+        cfg,
+        np.arange(known_class_num, accmulate_class_num),
+        source="train",
+        mode="train",
+    )
+    test_loader = data_manager.get_dataloader(
+        cfg, np.arange(0, accmulate_class_num), source="test", mode="test"
+    )
+
+    # 准备训练
+    logging.info(f"====> Training")
+    optimizer, scheduler = init_optimizer(cfg, model, task_index)
+    fc_file_name, lora_file_name = weight_file_path(cfg, task_index)
+    if exists(fc_file_name) and exists(lora_file_name):
+        logging.info(f"load pth weight")
+        model.load_fc_parameters(fc_file_name)
+        model.load_lora_parameters(lora_file_name)
+        model.to(cfg.device)
+    else:
+        logging.info(f"no pth weight")
+        logging.info(
+            " || ".join(["epoch", "total_loss", "train_acc", "correct", "total", "lr"])
+        )
+        for epoch in range(1, cfg.epochs + 1):
+            train(
+                cfg,
+                epoch,
+                model,
+                train_loader,
+                optimizer,
+                scheduler,
+                known_class_num,
+                accmulate_class_num,
+            )
+        model.save_fc_parameters(fc_file_name)
+        model.save_lora_parameters(lora_file_name)
+    logging.info(f"<==== Trained")
+
+    # 最优上界分数
+    test_acc = compute_current_accuracy(
+        cfg,
+        model,
+        test_loader,
+        known_class_num,
+        accmulate_class_num,
+    )
+    upper_accs.append(test_acc)
+
+    known_class_num = accmulate_class_num
+
+end_time = time.time()
+logging.info(f"\n====> Total time: {(end_time - start_time)/60/60} h")
+logging.info(f"\n====> Upper acc: {upper_accs}")

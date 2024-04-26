@@ -35,8 +35,6 @@ def init_args(args):
     makedirs(args.log_path, exist_ok=True)
     makedirs(args.weight_path, exist_ok=True)
     makedirs(args.weight_path, exist_ok=True)
-    
-    
 
 def init_logging(result_path):
     logger = logging.getLogger("")
@@ -56,7 +54,25 @@ def init_logging(result_path):
 def print_trainable_size(name, param):
     num_params = sum(p.numel() for p in param if p.requires_grad)
     logging.info(f"{name} trainable size: {num_params / 2**20:.4f}M")
-    
 
+def weight_file_path(cfg, task_index):
+    param_list=["dataset_name","train_type","tasks_num","rank","seed","epochs","tasks_lr_T"]
+    param_str = get_param_str(cfg,param_list)
+    unique_file_str = f"{param_str}_{task_index}.safetensors"
+    fc_file_name = join(cfg.weight_path, "fc_" + unique_file_str)
+    lora_file_name = join(cfg.weight_path, "lora_" + unique_file_str)
+    return fc_file_name, lora_file_name
+
+def get_param_str(cfg,param_list):
+    param_values=[]
+    for arg_name, arg_value in cfg.__dict__.items():
+        if arg_name in param_list:
+            param_values.append(str(arg_value))
+    assert len(param_list)==len(param_values)
+    param_str="_".join(param_values)
+    return param_str
+    
+def tensor2numpy(x):
+    return x.cpu().data.numpy() if x.is_cuda else x.data.numpy()
 
 
