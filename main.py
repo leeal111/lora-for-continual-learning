@@ -105,7 +105,6 @@ for task_index in range(cfg.tasks_num):
                 known_class_num,
                 accmulate_class_num,
             )
-        model.save_fc_parameters(fc_file_name)
         model.save_lora_parameters(lora_file_name)
     logging.info(f"<==== Trained")
 
