@@ -10,17 +10,14 @@ from test import compute_current_accuracy, eval_cnn
 from train import clustering, init_optimizer, init_other, train
 from utils import center_file_path, init_args, init_logging, weight_file_path
 
-# [120, 48, 125, 24, 6]
-# ["gaugan", "biggan", "wild", "whichfaceisreal", "san"]
-
 parser = argparse.ArgumentParser()
 parser.add_argument("--batch_size", type=int, default=50)
 parser.add_argument("--workers_num", type=int, default=2)
 parser.add_argument("--gpus", type=int, nargs="+", default=[3])
 parser.add_argument("--seed", type=int, default=10)
-parser.add_argument("--lr", type=float, default=1e-3)
-parser.add_argument("--epochs", type=int, default=1)
-parser.add_argument("--rank", type=int, default=2)
+parser.add_argument("--lr", type=float, default=3e-3)
+parser.add_argument("--epochs", type=int, default=13)
+parser.add_argument("--rank", type=int, default=10)
 
 parser.add_argument("--n_clusters", type=int, default=5)
 parser.add_argument("--dataset_path", type=str, default="./datas/CDDB")
