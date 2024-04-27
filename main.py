@@ -75,10 +75,11 @@ for task_index in range(args.tasks_num):
     current_class_num = args.class_num_per_task_list[task_index]
     accmulate_class_num = current_class_num + known_class_num
     logging.info(f"  ")
-    logging.info(f"  ")
+    logging.info(f"====>   ")
     logging.info(
         f"====> {task_index} Task Learn with class range: {known_class_num}-{accmulate_class_num}"
     )
+    logging.info(f"====>   ")
 
     # load data
     train_loader = data_manager.get_dataloader(
