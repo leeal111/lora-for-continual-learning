@@ -61,16 +61,21 @@ def print_trainable_size(name, param):
     logging.info(f"{name} trainable size: {num_params / 2**20:.4f}M")
 
 
+param_list = [
+    "dataset_name",
+    "train_type",
+    "tasks_num",
+    "rank",
+    "seed",
+    "epochs",
+    "tasks_lr_T",
+    "raitolossA",
+    "raitolossB",
+]
+
+
 def weight_file_path(args, task_index):
-    param_list = [
-        "dataset_name",
-        "train_type",
-        "tasks_num",
-        "rank",
-        "seed",
-        "epochs",
-        "tasks_lr_T",
-    ]
+
     param_str = get_param_str(args, param_list)
     unique_file_str = f"{param_str}_{task_index}.safetensors"
     lora_file_name = join(args.weight_path, "lora_" + unique_file_str)
@@ -93,15 +98,6 @@ def tensor2numpy(x):
 
 def center_file_path(args, task_index):
     infer_task_index = get_task_index()
-    param_list = [
-        "dataset_name",
-        "train_type",
-        "tasks_num",
-        "rank",
-        "seed",
-        "epochs",
-        "tasks_lr_T",
-    ]
     param_str = get_param_str(args, param_list)
     if infer_task_index == -1:
         unique_file_str = f"{infer_task_index}_{args.classes_num}_{task_index}.npy"
