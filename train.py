@@ -71,6 +71,7 @@ def set_random_seed(seed: int) -> None:
 
 def train(
     args,
+    task_index,
     epoch,
     net,
     loader,
@@ -80,9 +81,10 @@ def train(
     accmulate_class_num,
 ):
     loss_func = nn.CrossEntropyLoss().to(args.device)
+    total_cls_loss = 0.0
+    total_diff_loss = 0.0
     total_loss = 0.0
     correct, total = 0, 0
-    this_lr = scheduler.get_last_lr()[0]
     net.train()
     for _, datas in enumerate(loader):
         _, images, labels = datas
@@ -95,26 +97,68 @@ def train(
             pred[:, 0:known_class_num] = -float("inf")
             pred[:, accmulate_class_num:] = -float("inf")
             cls_loss = loss_func(pred, labels)
-            # A_loss=net
-            loss = cls_loss
+            diff_loss = net_diff(args, net, task_index)
+            loss = cls_loss + diff_loss
 
         args.scaler.scale(loss).backward()
         args.scaler.step(optimizer)
         args.scaler.update()
         scheduler.step()
 
+        total_cls_loss += cls_loss
+        total_diff_loss += diff_loss
         total_loss += loss.item()
         _, preds_train = torch.max(pred, dim=1)
         correct += preds_train.eq(labels.expand_as(preds_train)).cpu().sum()
         total += len(labels)
 
     total_loss /= len(loader)
+    total_cls_loss /= len(loader)
+    total_diff_loss /= len(loader)
 
     train_acc = np.around(tensor2numpy(correct) * 100 / total, decimals=2)
 
     logging.info(
-        f"{epoch:03}  {total_loss:.3f}  {train_acc:.3f}  {correct:06}  {total:06}  {this_lr:.3e}"
+        f"{epoch:03} {train_acc:.3f} {total_loss:.3f} {total_cls_loss:.3f} {total_diff_loss:.3f}"
     )
+
+
+def net_diff(args, net, task_index):
+    if task_index == 0:
+        return 0
+    else:
+        loss = 0.0
+        for lora_idx in range(len(net.lora_layer)):
+            layer1_index = lora_idx * args.tasks_num * 2 + (task_index - 1) * 2
+            layer2_index = lora_idx * args.tasks_num * 2 + (task_index) * 2
+
+            loss += args.raitolossA * layer_l2_diff(
+                net.w_As[layer1_index], net.w_As[layer2_index]
+            )
+            loss += args.raitolossA * layer_l2_diff(
+                net.w_As[layer1_index + 1], net.w_As[layer2_index + 1]
+            )
+            loss += args.raitolossB * layer_l2_diff(
+                net.w_Bs[layer1_index], net.w_Bs[layer2_index]
+            )
+            loss += args.raitolossB * layer_l2_diff(
+                net.w_Bs[layer1_index + 1], net.w_Bs[layer2_index + 1]
+            )
+
+        return loss
+
+
+def layer_l2_diff(layer1, layer2):
+    # 获取两个线性层之间的参数
+    parameters1 = torch.cat(
+        [param.view(-1) for param in layer1.parameters() if param.requires_grad]
+    )
+    parameters2 = torch.cat(
+        [param.view(-1) for param in layer2.parameters() if param.requires_grad]
+    )
+
+    # 计算参数差异的L2范数
+    return torch.norm(parameters1 - parameters2, p=2)
 
 
 # @torch.no_grad()

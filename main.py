@@ -43,7 +43,8 @@ parser.add_argument("--enable_load_center", action="store_true")
 parser.add_argument("--enable_upper_test", action="store_true")
 parser.add_argument("--enable_cluster", action="store_true")
 parser.add_argument("--enable_eval", action="store_true")
-
+parser.add_argument("--raitolossA", type=float, default=1)
+parser.add_argument("--raitolossB", type=float, default=1)
 args = parser.parse_args()
 init_args(args)
 init_logging(args.log_path)
@@ -105,12 +106,21 @@ for task_index in range(args.tasks_num):
         model.to(args.device)
     else:
         logging.info(
-            " || ".join(["epoch", "total_loss", "train_acc", "correct", "total", "lr"])
+            " || ".join(
+                [
+                    "epoch",
+                    "train_acc",
+                    "total_loss",
+                    "total_cls_loss",
+                    "total_diff_loss",
+                ]
+            )
         )
         set_task_index(task_index)
         for epoch in range(1, args.epochs + 1):
             train(
                 args,
+                task_index,
                 epoch,
                 model,
                 train_loader,
