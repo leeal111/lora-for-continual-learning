@@ -134,7 +134,7 @@ def clustering(args, net, loader, path, known_class_num):
                 feature, _ = net(inputs)
                 features.append(feature.cpu())
         features = torch.cat(features, 0).cpu().detach().numpy()
-        clustering = KMeans(n_clusters=5, random_state=0).fit(features)
+        clustering = KMeans(n_clusters=5, random_state=0, n_init=10).fit(features)
         centers = clustering.cluster_centers_
         np.save(path, centers)
     return torch.tensor(centers).to(args.device)

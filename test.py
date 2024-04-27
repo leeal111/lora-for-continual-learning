@@ -38,7 +38,7 @@ def eval_cnn(args, net, loader, kmeans_centers, known_class_num):
     net.eval()
     current_task_num = len(kmeans_centers)
     for _, (_, inputs, targets) in enumerate(loader):
-        set_task_index(-1)
+        set_task_index(0)
         inputs = inputs.to(args.device)
         targets = targets.to(args.device)
         with torch.no_grad():
@@ -57,19 +57,24 @@ def eval_cnn(args, net, loader, kmeans_centers, known_class_num):
                     min_distaces = torch.where(
                         distaces < min_distaces, distaces, min_distaces
                     )
-            # logging.info(f"{min_idxs.cpu().detach().numpy()}")
-            for idx in range(current_task_num):
-                set_task_index(idx)
-                # mask = (min_idxs == idx).nonzero().view(-1)
-                mask = (targets // 2 == idx).nonzero().view(-1)
-                if len(mask) == 0:
-                    continue
-                image = torch.index_select(inputs, 0, mask)
-                label = torch.index_select(targets, 0, mask)
-                _, logits = net.forward(image)
-                _, pred = torch.max(logits, dim=1)
-                y_pred.append(pred.cpu().numpy())
-                y_label.append(label.cpu().numpy())
+            logging.info(f"{min_idxs.cpu().detach().numpy()}")
+            select_task_index, _ = torch.mode(min_idxs)
+            set_task_index(int(select_task_index.item()))
+            _, logits = net.forward(inputs)
+            _, pred = torch.max(logits, dim=1)
+            y_pred.append(pred.cpu().numpy())
+            y_label.append(targets.cpu().numpy())
+            # for idx in range(current_task_num):
+            #     set_task_index(idx)
+            #     mask = (min_idxs == idx).nonzero().view(-1)
+            #     if len(mask) == 0:
+            #         continue
+            #     image = torch.index_select(inputs, 0, mask)
+            #     label = torch.index_select(targets, 0, mask)
+            #     _, logits = net.forward(image)
+            #     _, pred = torch.max(logits, dim=1)
+            #     y_pred.append(pred.cpu().numpy())
+            #     y_label.append(label.cpu().numpy())
 
     y_pred = np.concatenate(y_pred)
     y_label = np.concatenate(y_label)
