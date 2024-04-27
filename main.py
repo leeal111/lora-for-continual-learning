@@ -39,6 +39,9 @@ parser.add_argument("--tasks_lr_T", type=int, nargs="+")
 parser.add_argument("--train_type", type=str, default="lora", choices=["lora"])
 parser.add_argument("--if_load_weight", type=bool, default=True)
 parser.add_argument("--if_load_center", type=bool, default=True)
+parser.add_argument("--if_upper_test", type=bool, default=True)
+parser.add_argument("--if_cluster", type=bool, default=True)
+parser.add_argument("--if_eval", type=bool, default=True)
 
 args = parser.parse_args()
 init_args(args)
@@ -74,7 +77,7 @@ for task_index in range(args.tasks_num):
     logging.info(f"  ")
     logging.info(f"  ")
     logging.info(
-        f"====> Learn Task {task_index} with class range: {known_class_num}-{accmulate_class_num}"
+        f"====> {task_index} Task Learn with class range: {known_class_num}-{accmulate_class_num}"
     )
 
     # load data
@@ -114,40 +117,45 @@ for task_index in range(args.tasks_num):
                 accmulate_class_num,
             )
         model.save_lora_parameters(lora_file_name)
-    logging.info(f"<==== Trained")
 
-    logging.info(f"  ")
-    logging.info(f"====> UpperTesting")
-    set_task_index(task_index)
-    test_acc = compute_current_accuracy(
-        args,
-        model,
-        test_loader,
-        known_class_num,
-        accmulate_class_num,
-    )
-    upper_accs.append(test_acc)
+    if args.if_upper_test:
+        logging.info(f"  ")
+        logging.info(f"====> UpperTesting")
+        set_task_index(task_index)
+        test_acc = compute_current_accuracy(
+            args,
+            model,
+            test_loader,
+            known_class_num,
+            accmulate_class_num,
+        )
+        upper_accs.append(test_acc)
 
-    logging.info(f"  ")
-    logging.info(f"====> Clustering")
-    set_task_index(0)
-    center_file_name = center_file_path(args, task_index)
-    centers = clustering(args, model, train_loader, center_file_name, known_class_num)
-    kmeans_centers.append(centers)
+    if args.if_cluster:
+        logging.info(f"  ")
+        logging.info(f"====> Clustering")
+        set_task_index(0)
+        center_file_name = center_file_path(args, task_index)
+        centers = clustering(
+            args, model, train_loader, center_file_name, known_class_num
+        )
+        kmeans_centers.append(centers)
 
-    logging.info(f"  ")
-    logging.info(f"====> DomainTesting")
-    total_num, mean_acc, tasks_acc = eval_cnn(
-        args, model, test_loader, kmeans_centers, known_class_num
-    )
-    tasks_accs.append(tasks_acc)
-    mean_accs.append(mean_acc)
-    total_nums.append(total_num)
+    if args.if_eval:
+        logging.info(f"  ")
+        logging.info(f"====> DomainTesting")
+        total_num, mean_acc, tasks_acc = eval_cnn(
+            args, model, test_loader, kmeans_centers, known_class_num
+        )
+        tasks_accs.append(tasks_acc)
+        mean_accs.append(mean_acc)
+        total_nums.append(total_num)
 
     known_class_num = accmulate_class_num
     task_end_time = time.time()
     logging.info(f"  ")
     logging.info(f"task {task_index} time: {(task_end_time - task_start_time)/60} m")
+
 end_time = time.time()
 logging.info(f"  ")
 logging.info(f"  ")
