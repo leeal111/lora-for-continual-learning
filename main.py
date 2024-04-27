@@ -37,17 +37,18 @@ parser.add_argument("--tasks_lr_T", type=int, nargs="+")
 
 
 parser.add_argument("--train_type", type=str, default="lora", choices=["lora"])
+parser.add_argument("--if_load_weight", type=bool, default=True)
+parser.add_argument("--if_load_center", type=bool, default=True)
 
 cfg = parser.parse_args()
 init_args(cfg)
 init_logging(cfg.log_path)
 init_other(cfg)
 
-logging.info(f"====>")
 logging.info(f"experiment settings:")
 for arg_name, arg_value in cfg.__dict__.items():
     logging.info(f"{arg_name} : {str(arg_value)}")
-logging.info(f"<====")
+logging.info(f"  ")
 
 # load model
 model = load_vit_train_type(cfg)
@@ -70,7 +71,8 @@ for task_index in range(cfg.tasks_num):
     # get class tag range
     current_class_num = cfg.class_num_per_task_list[task_index]
     accmulate_class_num = current_class_num + known_class_num
-    logging.info(f"    {task_index}")
+    logging.info(f"  ")
+    logging.info(f"  ")
     logging.info(
         f"====> Learn Task {task_index} with class range: {known_class_num}-{accmulate_class_num}"
     )
@@ -88,6 +90,7 @@ for task_index in range(cfg.tasks_num):
 
     # 准备训练
     optimizer, scheduler = init_optimizer(cfg, model, task_index)
+    logging.info(f"  ")
     logging.info(f"====> Training")
     lora_file_name = weight_file_path(cfg, task_index)
     if exists(lora_file_name):
@@ -143,12 +146,14 @@ for task_index in range(cfg.tasks_num):
 
     known_class_num = accmulate_class_num
     task_end_time = time.time()
-    logging.info(
-        f"====> task {task_index} time: {(task_end_time - task_start_time)/60} m"
-    )
+    logging.info(f"  ")
+    logging.info(f"task {task_index} time: {(task_end_time - task_start_time)/60} m")
 end_time = time.time()
-logging.info(f"====> Total time: {(end_time - start_time)/60/60} h")
-logging.info(f"====> Upper acc: {upper_accs}")
-logging.info(f"====> Tasks acc: {tasks_accs}")
-logging.info(f"====> Mean acc: {mean_accs}")
-logging.info(f"====> Total num: {total_nums}")
+logging.info(f"  ")
+logging.info(f"  ")
+logging.info(f"====> experiment result")
+logging.info(f"Total time: {(end_time - start_time)/60/60} h")
+logging.info(f"Upper acc: {upper_accs}")
+logging.info(f"Tasks acc: {tasks_accs}")
+logging.info(f"Mean acc: {mean_accs}")
+logging.info(f"Total num: {total_nums}")
