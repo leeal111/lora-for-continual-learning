@@ -74,7 +74,7 @@ def eval_cnn(args, net, loader, kmeans_centers, known_class_num):
     y_pred = np.concatenate(y_pred)
     y_label = np.concatenate(y_label)
 
-    mean_acc = compute_accurcy(y_pred, y_label)
+    mean_acc = compute_accurcy(args, y_pred, y_label)
 
     start = 0
     end = 0
@@ -82,14 +82,16 @@ def eval_cnn(args, net, loader, kmeans_centers, known_class_num):
     for idx in range(current_task_num):
         end += args.class_num_per_task_list[idx]
         idxes = np.where(np.logical_and(y_label >= start, y_label < end))[0]
-        all_tasks_acc.append(compute_accurcy(y_pred[idxes], y_label[idxes]))
+        all_tasks_acc.append(compute_accurcy(args, y_pred[idxes], y_label[idxes]))
         start = end
 
     idxes = np.where(y_label < known_class_num)[0]
-    old_acc = 0 if len(idxes) == 0 else compute_accurcy(y_pred[idxes], y_label[idxes])
+    old_acc = (
+        0 if len(idxes) == 0 else compute_accurcy(args, y_pred[idxes], y_label[idxes])
+    )
 
     idxes = np.where(y_label >= known_class_num)[0]
-    new_acc = compute_accurcy(y_pred[idxes], y_label[idxes])
+    new_acc = compute_accurcy(args, y_pred[idxes], y_label[idxes])
 
     logging.info(f"mean_acc: {mean_acc}")
     logging.info(f"all_tasks_acc: {all_tasks_acc}")
@@ -98,6 +100,12 @@ def eval_cnn(args, net, loader, kmeans_centers, known_class_num):
     return len(y_label), mean_acc, all_tasks_acc
 
 
-def compute_accurcy(y_pred, y_label):
+def compute_accurcy(args, y_pred, y_label):
     assert len(y_pred) == len(y_label)
-    return np.around(((y_pred) == (y_label)).sum() * 100 / len(y_pred), decimals=2)
+    class_num_per_task = args.classes_num // args.tasks_num
+    return np.around(
+        (y_pred % class_num_per_task == y_label % class_num_per_task).sum()
+        * 100
+        / len(y_label),
+        decimals=2,
+    )
