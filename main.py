@@ -133,7 +133,7 @@ for task_index in range(args.tasks_num):
             )
         model.save_lora_parameters(lora_file_name)
 
-    if args.not_upper_test:
+    if not args.not_upper_test:
         logging.info(f"  ")
         logging.info(f"====> UpperTesting")
         set_task_index(task_index)
@@ -146,7 +146,7 @@ for task_index in range(args.tasks_num):
         )
         upper_accs.append(test_acc)
 
-    if args.not_cluster:
+    if not args.not_cluster:
         logging.info(f"  ")
         logging.info(f"====> Clustering")
         set_task_index(0)
@@ -156,7 +156,7 @@ for task_index in range(args.tasks_num):
         )
         kmeans_centers.append(centers)
 
-    if args.not_eval:
+    if not args.not_eval:
         logging.info(f"  ")
         logging.info(f"====> DomainTesting")
         total_num, mean_acc, tasks_acc = eval_cnn(
