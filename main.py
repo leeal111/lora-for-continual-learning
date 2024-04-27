@@ -40,22 +40,22 @@ parser.add_argument("--train_type", type=str, default="lora", choices=["lora"])
 parser.add_argument("--if_load_weight", type=bool, default=True)
 parser.add_argument("--if_load_center", type=bool, default=True)
 
-cfg = parser.parse_args()
-init_args(cfg)
-init_logging(cfg.log_path)
-init_other(cfg)
+args = parser.parse_args()
+init_args(args)
+init_logging(args.log_path)
+init_other(args)
 
 logging.info(f"experiment settings:")
-for arg_name, arg_value in cfg.__dict__.items():
+for arg_name, arg_value in args.__dict__.items():
     logging.info(f"{arg_name} : {str(arg_value)}")
 logging.info(f"  ")
 
 # load model
-model = load_vit_train_type(cfg)
-model.to(cfg.device)
+model = load_vit_train_type(args)
+model.to(args.device)
 
 # load data_manager
-data_manager = DataManager(cfg)
+data_manager = DataManager(args)
 
 
 start_time = time.time()
@@ -65,11 +65,11 @@ kmeans_centers = []
 tasks_accs = []
 mean_accs = []
 total_nums = []
-for task_index in range(cfg.tasks_num):
+for task_index in range(args.tasks_num):
     task_start_time = time.time()
 
     # get class tag range
-    current_class_num = cfg.class_num_per_task_list[task_index]
+    current_class_num = args.class_num_per_task_list[task_index]
     accmulate_class_num = current_class_num + known_class_num
     logging.info(f"  ")
     logging.info(f"  ")
@@ -79,32 +79,32 @@ for task_index in range(cfg.tasks_num):
 
     # load data
     train_loader = data_manager.get_dataloader(
-        cfg,
+        args,
         np.arange(known_class_num, accmulate_class_num),
         source="train",
         mode="train",
     )
     test_loader = data_manager.get_dataloader(
-        cfg, np.arange(0, accmulate_class_num), source="test", mode="test"
+        args, np.arange(0, accmulate_class_num), source="test", mode="test"
     )
 
     # 准备训练
-    optimizer, scheduler = init_optimizer(cfg, model, task_index)
+    optimizer, scheduler = init_optimizer(args, model, task_index)
     logging.info(f"  ")
     logging.info(f"====> Training")
-    lora_file_name = weight_file_path(cfg, task_index)
-    if cfg.if_load_weight and exists(lora_file_name):
+    lora_file_name = weight_file_path(args, task_index)
+    if args.if_load_weight and exists(lora_file_name):
         logging.info(f"load pth weight")
         model.load_lora_parameters(lora_file_name)
-        model.to(cfg.device)
+        model.to(args.device)
     else:
         logging.info(
             " || ".join(["epoch", "total_loss", "train_acc", "correct", "total", "lr"])
         )
         set_task_index(task_index)
-        for epoch in range(1, cfg.epochs + 1):
+        for epoch in range(1, args.epochs + 1):
             train(
-                cfg,
+                args,
                 epoch,
                 model,
                 train_loader,
@@ -120,7 +120,7 @@ for task_index in range(cfg.tasks_num):
     logging.info(f"====> UpperTesting")
     set_task_index(task_index)
     test_acc = compute_current_accuracy(
-        cfg,
+        args,
         model,
         test_loader,
         known_class_num,
@@ -131,14 +131,14 @@ for task_index in range(cfg.tasks_num):
     logging.info(f"  ")
     logging.info(f"====> Clustering")
     set_task_index(0)
-    center_file_name = center_file_path(cfg, task_index)
-    centers = clustering(cfg, model, train_loader, center_file_name, known_class_num)
+    center_file_name = center_file_path(args, task_index)
+    centers = clustering(args, model, train_loader, center_file_name, known_class_num)
     kmeans_centers.append(centers)
 
     logging.info(f"  ")
     logging.info(f"====> DomainTesting")
     total_num, mean_acc, tasks_acc = eval_cnn(
-        cfg, model, test_loader, kmeans_centers, known_class_num
+        args, model, test_loader, kmeans_centers, known_class_num
     )
     tasks_accs.append(tasks_acc)
     mean_accs.append(mean_acc)

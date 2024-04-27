@@ -57,16 +57,16 @@ def print_trainable_size(name, param):
     num_params = sum(p.numel() for p in param if p.requires_grad)
     logging.info(f"{name} trainable size: {num_params / 2**20:.4f}M")
 
-def weight_file_path(cfg, task_index):
+def weight_file_path(args, task_index):
     param_list=["dataset_name","train_type","tasks_num","rank","seed","epochs","tasks_lr_T"]
-    param_str = get_param_str(cfg,param_list)
+    param_str = get_param_str(args,param_list)
     unique_file_str = f"{param_str}_{task_index}.safetensors"
-    lora_file_name = join(cfg.weight_path, "lora_" + unique_file_str)
+    lora_file_name = join(args.weight_path, "lora_" + unique_file_str)
     return lora_file_name
 
-def get_param_str(cfg,param_list):
+def get_param_str(args,param_list):
     param_values=[]
-    for arg_name, arg_value in cfg.__dict__.items():
+    for arg_name, arg_value in args.__dict__.items():
         if arg_name in param_list:
             param_values.append(str(arg_value))
     assert len(param_list)==len(param_values)
@@ -76,14 +76,14 @@ def get_param_str(cfg,param_list):
 def tensor2numpy(x):
     return x.cpu().data.numpy() if x.is_cuda else x.data.numpy()
 
-def center_file_path(cfg, task_index):
+def center_file_path(args, task_index):
     infer_task_index=get_task_index()
     param_list=["dataset_name","train_type","tasks_num","rank","seed","epochs","tasks_lr_T"]
-    param_str = get_param_str(cfg,param_list)
+    param_str = get_param_str(args,param_list)
     if infer_task_index==-1:
-        unique_file_str = f"{infer_task_index}_{cfg.classes_num}_{task_index}.npy"
+        unique_file_str = f"{infer_task_index}_{args.classes_num}_{task_index}.npy"
     else:
-        unique_file_str = f"{infer_task_index}_{cfg.classes_num}_{param_str}_{task_index}.npy"
-    file_name = join(cfg.center_path, unique_file_str)
+        unique_file_str = f"{infer_task_index}_{args.classes_num}_{param_str}_{task_index}.npy"
+    file_name = join(args.center_path, unique_file_str)
     return file_name
 
