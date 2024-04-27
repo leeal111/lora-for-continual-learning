@@ -9,6 +9,7 @@ from model import load_vit_train_type
 from test import compute_current_accuracy, eval_cnn
 from train import clustering, init_optimizer, init_other, train
 from utils import center_file_path, init_args, init_logging, weight_file_path
+import sys
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--batch_size", type=int, default=50)
@@ -40,14 +41,15 @@ parser.add_argument("--tasks_lr_T", type=int, nargs="+", default=[120, 48, 125, 
 parser.add_argument("--train_type", type=str, default="lora", choices=["lora"])
 parser.add_argument("--enable_load_weight", action="store_true")
 parser.add_argument("--enable_load_center", action="store_true")
-parser.add_argument("--enable_upper_test", action="store_true")
-parser.add_argument("--enable_cluster", action="store_true")
-parser.add_argument("--enable_eval", action="store_true")
+parser.add_argument("--not_upper_test", action="store_true")
+parser.add_argument("--not_cluster", action="store_true")
+parser.add_argument("--not_eval", action="store_true")
 parser.add_argument("--raitolossA", type=float, default=1)
 parser.add_argument("--raitolossB", type=float, default=1)
 args = parser.parse_args()
+
 init_args(args)
-init_logging(args.log_path)
+init_logging(args.log_path, file_name="_".join(sys.argv[1:]).replace("-", ""))
 init_other(args)
 
 logging.info(f"experiment settings:")
@@ -131,7 +133,7 @@ for task_index in range(args.tasks_num):
             )
         model.save_lora_parameters(lora_file_name)
 
-    if args.enable_upper_test:
+    if args.not_upper_test:
         logging.info(f"  ")
         logging.info(f"====> UpperTesting")
         set_task_index(task_index)
@@ -144,7 +146,7 @@ for task_index in range(args.tasks_num):
         )
         upper_accs.append(test_acc)
 
-    if args.enable_cluster:
+    if args.not_cluster:
         logging.info(f"  ")
         logging.info(f"====> Clustering")
         set_task_index(0)
@@ -154,7 +156,7 @@ for task_index in range(args.tasks_num):
         )
         kmeans_centers.append(centers)
 
-    if args.enable_eval:
+    if args.not_eval:
         logging.info(f"  ")
         logging.info(f"====> DomainTesting")
         total_num, mean_acc, tasks_acc = eval_cnn(
