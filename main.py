@@ -32,8 +32,12 @@ parser.add_argument("--tasks_num", type=int, default=5)
 parser.add_argument("--result_path", type=str, default="./results")
 
 parser.add_argument("--class_num_per_task_list", type=int, nargs="+")
-parser.add_argument("--tasks_name", nargs="+")
-parser.add_argument("--tasks_lr_T", type=int, nargs="+")
+parser.add_argument(
+    "--tasks_name",
+    nargs="+",
+    default=["gaugan", "biggan", "wild", "whichfaceisreal", "san"],
+)
+parser.add_argument("--tasks_lr_T", type=int, nargs="+", default=[120, 48, 125, 24, 6])
 
 
 parser.add_argument("--train_type", type=str, default="lora", choices=["lora"])
@@ -80,6 +84,7 @@ for task_index in range(args.tasks_num):
         f"====> {task_index} Task Learn with class range: {known_class_num}-{accmulate_class_num}"
     )
     logging.info(f"====>   ")
+    logging.info(f"  ")
 
     # load data
     train_loader = data_manager.get_dataloader(
