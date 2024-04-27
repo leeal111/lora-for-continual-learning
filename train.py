@@ -119,7 +119,7 @@ def train(
 
 # @torch.no_grad()
 def clustering(args, net, loader, path, known_class_num):
-    if args.if_load_center and exists(path):
+    if args.enable_load_center and exists(path):
         logging.info(f"load center data")
         centers = np.load(path)
     else:

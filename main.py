@@ -37,11 +37,11 @@ parser.add_argument("--tasks_lr_T", type=int, nargs="+")
 
 
 parser.add_argument("--train_type", type=str, default="lora", choices=["lora"])
-parser.add_argument("--if_load_weight", type=bool, default=True)
-parser.add_argument("--if_load_center", type=bool, default=True)
-parser.add_argument("--if_upper_test", type=bool, default=True)
-parser.add_argument("--if_cluster", type=bool, default=True)
-parser.add_argument("--if_eval", type=bool, default=True)
+parser.add_argument("--enable_load_weight", action="store_true")
+parser.add_argument("--enable_load_center", action="store_true")
+parser.add_argument("--enable_upper_test", action="store_true")
+parser.add_argument("--enable_cluster", action="store_true")
+parser.add_argument("--enable_eval", action="store_true")
 
 args = parser.parse_args()
 init_args(args)
@@ -96,7 +96,7 @@ for task_index in range(args.tasks_num):
     logging.info(f"  ")
     logging.info(f"====> Training")
     lora_file_name = weight_file_path(args, task_index)
-    if args.if_load_weight and exists(lora_file_name):
+    if args.enable_load_weight and exists(lora_file_name):
         logging.info(f"load pth weight")
         model.load_lora_parameters(lora_file_name)
         model.to(args.device)
@@ -118,7 +118,7 @@ for task_index in range(args.tasks_num):
             )
         model.save_lora_parameters(lora_file_name)
 
-    if args.if_upper_test:
+    if args.enable_upper_test:
         logging.info(f"  ")
         logging.info(f"====> UpperTesting")
         set_task_index(task_index)
@@ -131,7 +131,7 @@ for task_index in range(args.tasks_num):
         )
         upper_accs.append(test_acc)
 
-    if args.if_cluster:
+    if args.enable_cluster:
         logging.info(f"  ")
         logging.info(f"====> Clustering")
         set_task_index(0)
@@ -141,7 +141,7 @@ for task_index in range(args.tasks_num):
         )
         kmeans_centers.append(centers)
 
-    if args.if_eval:
+    if args.enable_eval:
         logging.info(f"  ")
         logging.info(f"====> DomainTesting")
         total_num, mean_acc, tasks_acc = eval_cnn(
