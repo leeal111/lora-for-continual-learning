@@ -57,7 +57,6 @@ def eval_cnn(args, net, loader, kmeans_centers, known_class_num):
                     min_distaces = torch.where(
                         distaces < min_distaces, distaces, min_distaces
                     )
-            logging.info(f"{min_idxs.cpu().detach().numpy()}")
             select_task_index, _ = torch.mode(min_idxs)
             set_task_index(int(select_task_index.item()))
             _, logits = net.forward(inputs)
@@ -67,6 +66,7 @@ def eval_cnn(args, net, loader, kmeans_centers, known_class_num):
             # for idx in range(current_task_num):
             #     set_task_index(idx)
             #     mask = (min_idxs == idx).nonzero().view(-1)
+            #     # mask = (targets//2 == idx).nonzero().view(-1)
             #     if len(mask) == 0:
             #         continue
             #     image = torch.index_select(inputs, 0, mask)
