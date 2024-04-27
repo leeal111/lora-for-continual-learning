@@ -117,24 +117,24 @@ def train(
     )
 
 
-@torch.no_grad()
-def clustering(args, net, loader, path):
-    if exists(path):
+# @torch.no_grad()
+def clustering(args, net, loader, path, known_class_num):
+    if args.if_load_center and exists(path):
         logging.info(f"load center data")
         centers = np.load(path)
     else:
         logging.info(f"search center data")
-        net.eval()
+        # net.eval()
         features = []
-        for _, (_, inputs, targets) in enumerate(loader):
+        for i, (_, inputs, targets) in enumerate(loader):
             inputs, targets = inputs.to(args.device), targets.to(args.device)
+            mask = (targets >= known_class_num).nonzero().view(-1)
+            inputs = torch.index_select(inputs, 0, mask)
             with torch.no_grad():
                 feature, _ = net(inputs)
-            features.append(feature.cpu())
+                features.append(feature.cpu())
         features = torch.cat(features, 0).cpu().detach().numpy()
-        clustering = KMeans(
-            n_clusters=args.n_clusters, random_state=args.seed, n_init=10
-        ).fit(features)
+        clustering = KMeans(n_clusters=5, random_state=0).fit(features)
         centers = clustering.cluster_centers_
         np.save(path, centers)
     return torch.tensor(centers).to(args.device)

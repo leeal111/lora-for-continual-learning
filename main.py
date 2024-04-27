@@ -93,7 +93,7 @@ for task_index in range(cfg.tasks_num):
     logging.info(f"  ")
     logging.info(f"====> Training")
     lora_file_name = weight_file_path(cfg, task_index)
-    if exists(lora_file_name):
+    if cfg.if_load_weight and exists(lora_file_name):
         logging.info(f"load pth weight")
         model.load_lora_parameters(lora_file_name)
         model.to(cfg.device)
@@ -116,6 +116,7 @@ for task_index in range(cfg.tasks_num):
         model.save_lora_parameters(lora_file_name)
     logging.info(f"<==== Trained")
 
+    logging.info(f"  ")
     logging.info(f"====> UpperTesting")
     set_task_index(task_index)
     test_acc = compute_current_accuracy(
@@ -126,15 +127,15 @@ for task_index in range(cfg.tasks_num):
         accmulate_class_num,
     )
     upper_accs.append(test_acc)
-    logging.info(f"<==== UpperTested")
 
+    logging.info(f"  ")
     logging.info(f"====> Clustering")
-    set_task_index(-1)
+    set_task_index(0)
     center_file_name = center_file_path(cfg, task_index)
-    centers = clustering(cfg, model, train_loader, center_file_name)
+    centers = clustering(cfg, model, train_loader, center_file_name, known_class_num)
     kmeans_centers.append(centers)
-    logging.info(f"<==== Clustered")
 
+    logging.info(f"  ")
     logging.info(f"====> DomainTesting")
     total_num, mean_acc, tasks_acc = eval_cnn(
         cfg, model, test_loader, kmeans_centers, known_class_num
@@ -142,7 +143,6 @@ for task_index in range(cfg.tasks_num):
     tasks_accs.append(tasks_acc)
     mean_accs.append(mean_acc)
     total_nums.append(total_num)
-    logging.info(f"<==== DomainTested")
 
     known_class_num = accmulate_class_num
     task_end_time = time.time()
