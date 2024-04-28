@@ -110,7 +110,13 @@ def center_file_path(args, task_index):
 
 
 def argv_str(argv):
-    exlusion_list = ["--result_path", "--gpus", "--workers_num"]
+    exlusion_list = [
+        "--result_path",
+        "--gpus",
+        "--workers_num",
+        "--pretrain_model_path",
+        "--dataset_path",
+    ]
     add_flag = True
     new_list = []
     for item in argv:
