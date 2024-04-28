@@ -107,3 +107,17 @@ def center_file_path(args, task_index):
         )
     file_name = join(args.center_path, unique_file_str)
     return file_name
+
+
+def argv_str(argv):
+    exlusion_list = ["--result_path", "--gpus", "--workers_num"]
+    add_flag = True
+    new_list = []
+    for item in argv:
+        if item.startswith("--") and item not in exlusion_list:
+            add_flag = True
+        if item in exlusion_list:
+            add_flag = False
+        if add_flag:
+            new_list.append(item)
+    return "_".join(new_list).replace("-", "")

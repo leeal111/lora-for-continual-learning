@@ -8,7 +8,7 @@ from lora import set_task_index
 from model import load_vit_train_type
 from test import compute_current_accuracy, eval_cnn
 from train import clustering, init_optimizer, init_other, train
-from utils import center_file_path, init_args, init_logging, weight_file_path
+from utils import argv_str, center_file_path, init_args, init_logging, weight_file_path
 import sys
 
 parser = argparse.ArgumentParser()
@@ -49,7 +49,8 @@ parser.add_argument("--raitolossB", type=float, default=1)
 args = parser.parse_args()
 
 init_args(args)
-init_logging(args.log_path, file_name="_".join(sys.argv[1:]).replace("-", ""))
+
+init_logging(args.log_path, file_name=argv_str(sys.argv[1:]))
 init_other(args)
 
 logging.info(f"experiment settings:")
