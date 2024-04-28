@@ -100,7 +100,7 @@ for task_index in range(args.tasks_num):
     # 准备训练
     optimizer, scheduler = init_optimizer(args, model, task_index)
     logging.info(f"  ")
-    logging.info(f"====> Training")
+    logging.info(f"====> {task_index} Training")
     lora_file_name = weight_file_path(args, task_index)
     if args.enable_load_weight and exists(lora_file_name):
         logging.info(f"load pth weight")
@@ -135,7 +135,7 @@ for task_index in range(args.tasks_num):
 
     if not args.not_upper_test:
         logging.info(f"  ")
-        logging.info(f"====> UpperTesting")
+        logging.info(f"====> {task_index} UpperTesting")
         set_task_index(task_index)
         test_acc = compute_current_accuracy(
             args,
@@ -148,7 +148,7 @@ for task_index in range(args.tasks_num):
 
     if not args.not_cluster:
         logging.info(f"  ")
-        logging.info(f"====> Clustering")
+        logging.info(f"====> {task_index} Clustering")
         set_task_index(0)
         center_file_name = center_file_path(args, task_index)
         centers = clustering(
@@ -158,7 +158,7 @@ for task_index in range(args.tasks_num):
 
     if not args.not_eval:
         logging.info(f"  ")
-        logging.info(f"====> DomainTesting")
+        logging.info(f"====> {task_index} DomainTesting")
         total_num, mean_acc, tasks_acc = eval_cnn(
             args, model, test_loader, kmeans_centers, known_class_num
         )
