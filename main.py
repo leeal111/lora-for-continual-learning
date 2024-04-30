@@ -12,6 +12,7 @@ from utils import argv_str, center_file_path, init_args, init_logging, weight_fi
 import sys
 
 parser = argparse.ArgumentParser()
+parser.add_argument("--test_label", action="store_true")
 parser.add_argument("--batch_size", type=int, default=50)
 parser.add_argument("--workers_num", type=int, default=2)
 parser.add_argument("--gpus", type=int, nargs="+", default=[3])
@@ -46,6 +47,11 @@ parser.add_argument("--not_cluster", action="store_true")
 parser.add_argument("--not_eval", action="store_true")
 parser.add_argument("--raitolossA", type=float, default=0)
 parser.add_argument("--raitolossB", type=float, default=0)
+parser.add_argument("--loss_ratio_start", type=float, default=1)
+parser.add_argument("--loss_ratio_end", type=float, default=1)
+parser.add_argument("--ratio_type", type=str, default="linear")
+parser.add_argument("--raitolossTeacher", type=float, default=0)
+
 args = parser.parse_args()
 
 init_args(args)
@@ -119,8 +125,9 @@ for task_index in range(args.tasks_num):
                 ]
             )
         )
-        set_task_index(task_index)
         for epoch in range(1, args.epochs + 1):
+            if epoch > 3 and args.test_label:
+                break
             train(
                 args,
                 task_index,
@@ -137,9 +144,9 @@ for task_index in range(args.tasks_num):
     if not args.not_upper_test:
         logging.info(f"  ")
         logging.info(f"====> {task_index} UpperTesting")
-        set_task_index(task_index)
         test_acc = compute_current_accuracy(
             args,
+            task_index,
             model,
             test_loader,
             known_class_num,
@@ -150,7 +157,6 @@ for task_index in range(args.tasks_num):
     if not args.not_cluster:
         logging.info(f"  ")
         logging.info(f"====> {task_index} Clustering")
-        set_task_index(0)
         center_file_name = center_file_path(args, task_index)
         centers = clustering(
             args, model, train_loader, center_file_name, known_class_num

@@ -1,4 +1,5 @@
 import logging
+import math
 import os
 import random
 
@@ -6,6 +7,7 @@ import numpy as np
 from sklearn.cluster import KMeans
 import torch
 import torch.optim as optim
+from lora import set_task_index
 from utils import print_trainable_size, tensor2numpy
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.cuda.amp.grad_scaler import GradScaler
@@ -93,11 +95,12 @@ def train(
         loss = 0.0
         optimizer.zero_grad()
         with autocast(enabled=True):
-            _, pred = net(images)
+            set_task_index(task_index)
+            fea, pred = net(images)
             pred[:, 0:known_class_num] = -float("inf")
             pred[:, accmulate_class_num:] = -float("inf")
             cls_loss = loss_func(pred, labels)
-            diff_loss = net_diff(args, net, task_index)
+            diff_loss = add_loss(args, images, fea, net, task_index)
             loss = cls_loss + diff_loss
 
         args.scaler.scale(loss).backward()
@@ -123,29 +126,51 @@ def train(
     )
 
 
-def net_diff(args, net, task_index):
+def add_loss(args, images, cur_fea, net, task_index):
+    diff_loss = 0.0
+    teacher_loss = 0.0
     if task_index == 0:
         return 0
     else:
-        loss = 0.0
         for lora_idx in range(len(net.lora_layer)):
             layer1_index = lora_idx * args.tasks_num * 2 + (task_index - 1) * 2
             layer2_index = lora_idx * args.tasks_num * 2 + (task_index) * 2
 
-            loss += args.raitolossA * layer_l2_diff(
-                net.w_As[layer1_index], net.w_As[layer2_index]
+            diff_loss += (
+                inter_radio(args, lora_idx, len(net.lora_layer))
+                * args.raitolossA
+                * layer_l2_diff(net.w_As[layer1_index], net.w_As[layer2_index])
             )
-            loss += args.raitolossA * layer_l2_diff(
-                net.w_As[layer1_index + 1], net.w_As[layer2_index + 1]
+            diff_loss += (
+                inter_radio(args, lora_idx, len(net.lora_layer))
+                * args.raitolossA
+                * layer_l2_diff(net.w_As[layer1_index + 1], net.w_As[layer2_index + 1])
             )
-            loss += args.raitolossB * layer_l2_diff(
-                net.w_Bs[layer1_index], net.w_Bs[layer2_index]
+            diff_loss += (
+                inter_radio(args, lora_idx, len(net.lora_layer))
+                * args.raitolossB
+                * layer_l2_diff(net.w_Bs[layer1_index], net.w_Bs[layer2_index])
             )
-            loss += args.raitolossB * layer_l2_diff(
-                net.w_Bs[layer1_index + 1], net.w_Bs[layer2_index + 1]
+            diff_loss += (
+                inter_radio(args, lora_idx, len(net.lora_layer))
+                * args.raitolossB
+                * layer_l2_diff(net.w_Bs[layer1_index + 1], net.w_Bs[layer2_index + 1])
             )
 
-        return loss
+    if math.isclose(args.raitolossTeacher, 0):
+        if task_index == 0:
+            return 0
+        else:
+            set_task_index(task_index - 1)
+            fea, _ = net(images)
+            teacher_loss = torch.norm(cur_fea - fea, p=2) * args.raitolossTeacher
+
+    return teacher_loss + diff_loss
+
+
+def inter_radio(args, index, lora_num):
+    if args.ratio_type == "linear":
+        return index / lora_num * (args.loss_ratio_end - args.loss_ratio_start)
 
 
 def layer_l2_diff(layer1, layer2):
@@ -175,6 +200,7 @@ def clustering(args, net, loader, path, known_class_num):
             mask = (targets >= known_class_num).nonzero().view(-1)
             inputs = torch.index_select(inputs, 0, mask)
             with torch.no_grad():
+                set_task_index(0)
                 feature, _ = net(inputs)
                 features.append(feature.cpu())
         features = torch.cat(features, 0).cpu().detach().numpy()

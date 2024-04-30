@@ -8,7 +8,7 @@ from utils import tensor2numpy
 
 
 @torch.no_grad()
-def compute_current_accuracy(args, net, loader, known_class_num, accmulate_class_num):
+def compute_current_accuracy(args,task_index, net, loader, known_class_num, accmulate_class_num):
     net.eval()
     correct, total = 0, 0
     for _, (_, inputs, targets) in enumerate(loader):
@@ -19,6 +19,7 @@ def compute_current_accuracy(args, net, loader, known_class_num, accmulate_class
         image = torch.index_select(image, 0, mask)
         label = torch.index_select(label, 0, mask)
         with torch.no_grad():
+            set_task_index(task_index)
             _, pred = net(image)
         pred[:, 0:known_class_num] = -float("inf")
         pred[:, accmulate_class_num:] = -float("inf")
@@ -38,10 +39,10 @@ def eval_cnn(args, net, loader, kmeans_centers, known_class_num):
     net.eval()
     current_task_num = len(kmeans_centers)
     for _, (_, inputs, targets) in enumerate(loader):
-        set_task_index(0)
         inputs = inputs.to(args.device)
         targets = targets.to(args.device)
         with torch.no_grad():
+            set_task_index(0)
             features, _ = net(inputs)
             min_distaces = torch.tensor([float("inf")] * features.shape[0]).to(
                 args.device
