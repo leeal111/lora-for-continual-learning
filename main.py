@@ -125,6 +125,7 @@ for task_index in range(args.tasks_num):
                 ]
             )
         )
+
         for epoch in range(1, args.epochs + 1):
             if epoch > 3 and args.test_label:
                 break
