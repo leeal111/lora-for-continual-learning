@@ -116,6 +116,8 @@ def argv_str(argv):
         "--workers_num",
         "--pretrain_model_path",
         "--dataset_path",
+        "--enable_load_weight"
+        "--enable_load_center"
     ]
     add_flag = True
     new_list = []

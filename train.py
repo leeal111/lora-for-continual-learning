@@ -96,11 +96,19 @@ def train(
         optimizer.zero_grad()
         with autocast(enabled=True):
             set_task_index(task_index)
-            fea, pred = net(images)
+            cur_fea, pred = net(images)
             pred[:, 0:known_class_num] = -float("inf")
             pred[:, accmulate_class_num:] = -float("inf")
             cls_loss = loss_func(pred, labels)
-            diff_loss = add_loss(args, images, fea, net, task_index)
+            teacher_loss = 0.0
+            if not math.isclose(args.raitolossTeacher, 0):
+                if task_index != 0:
+                    set_task_index(task_index - 1)
+                    fea, _ = net(images)
+                    teacher_loss = (
+                        torch.norm(cur_fea - fea, p=2) * args.raitolossTeacher
+                    )
+            diff_loss = dif_loss(args, net, task_index) + teacher_loss
             loss = cls_loss + diff_loss
 
         args.scaler.scale(loss).backward()
@@ -126,9 +134,8 @@ def train(
     )
 
 
-def add_loss(args, images, cur_fea, net, task_index):
+def dif_loss(args, net, task_index):
     diff_loss = 0.0
-    teacher_loss = 0.0
     if task_index == 0:
         return 0
     else:
@@ -157,20 +164,15 @@ def add_loss(args, images, cur_fea, net, task_index):
                 * layer_l2_diff(net.w_Bs[layer1_index + 1], net.w_Bs[layer2_index + 1])
             )
 
-    if math.isclose(args.raitolossTeacher, 0):
-        if task_index == 0:
-            return 0
-        else:
-            set_task_index(task_index - 1)
-            fea, _ = net(images)
-            teacher_loss = torch.norm(cur_fea - fea, p=2) * args.raitolossTeacher
-
-    return teacher_loss + diff_loss
+    return diff_loss
 
 
 def inter_radio(args, index, lora_num):
     if args.ratio_type == "linear":
-        return index / lora_num * (args.loss_ratio_end - args.loss_ratio_start)
+        if math.isclose(args.loss_ratio_end, args.loss_ratio_start):
+            return args.loss_ratio_end
+        else:
+            return index / lora_num * (args.loss_ratio_end - args.loss_ratio_start)
 
 
 def layer_l2_diff(layer1, layer2):
@@ -200,11 +202,13 @@ def clustering(args, net, loader, path, known_class_num):
             mask = (targets >= known_class_num).nonzero().view(-1)
             inputs = torch.index_select(inputs, 0, mask)
             with torch.no_grad():
-                set_task_index(0)
+                set_task_index(-1)
                 feature, _ = net(inputs)
                 features.append(feature.cpu())
         features = torch.cat(features, 0).cpu().detach().numpy()
-        clustering = KMeans(n_clusters=5, random_state=0, n_init=10).fit(features)
+        clustering = KMeans(
+            n_clusters=args.n_clusters, random_state=args.seed, n_init=10
+        ).fit(features)
         centers = clustering.cluster_centers_
         np.save(path, centers)
     return torch.tensor(centers).to(args.device)

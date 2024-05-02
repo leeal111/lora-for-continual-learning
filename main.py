@@ -4,7 +4,6 @@ import time
 from os.path import exists
 import numpy as np
 from data_manager import DataManager
-from lora import set_task_index
 from model import load_vit_train_type
 from test import compute_current_accuracy, eval_cnn
 from train import clustering, init_optimizer, init_other, train
@@ -12,12 +11,12 @@ from utils import argv_str, center_file_path, init_args, init_logging, weight_fi
 import sys
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--test_label", action="store_true")
+# parser.add_argument("--test_label", action="store_true")
 parser.add_argument("--batch_size", type=int, default=50)
-parser.add_argument("--workers_num", type=int, default=2)
-parser.add_argument("--gpus", type=int, nargs="+", default=[3])
+parser.add_argument("--workers_num", type=int, default=36)
+parser.add_argument("--gpus", type=int, nargs="+", default=[0])
 parser.add_argument("--seed", type=int, default=10)
-parser.add_argument("--lr", type=float, default=3e-3)
+parser.add_argument("--lr", type=float, default=1e-3)
 parser.add_argument("--epochs", type=int, default=13)
 parser.add_argument("--rank", type=int, default=10)
 
@@ -51,6 +50,7 @@ parser.add_argument("--loss_ratio_start", type=float, default=1)
 parser.add_argument("--loss_ratio_end", type=float, default=1)
 parser.add_argument("--ratio_type", type=str, default="linear")
 parser.add_argument("--raitolossTeacher", type=float, default=0)
+parser.add_argument("--class_sum", action="store_true")
 
 args = parser.parse_args()
 
@@ -168,7 +168,12 @@ for task_index in range(args.tasks_num):
         logging.info(f"  ")
         logging.info(f"====> {task_index} DomainTesting")
         total_num, mean_acc, tasks_acc = eval_cnn(
-            args, model, test_loader, kmeans_centers, known_class_num
+            args,
+            model,
+            test_loader,
+            kmeans_centers,
+            known_class_num,
+            accmulate_class_num,
         )
         tasks_accs.append(tasks_acc)
         mean_accs.append(mean_acc)
