@@ -15,18 +15,19 @@ def load_vit(args):
 
 
 def load_vit_train_type(args):
+    # lora_layer=list(range(args.lora_layers_start, args.lora_layers_end+1))
     model = load_vit(args)
     if args.train_type == "lora":
         model = LoRA_ViT(
             model,
             r=args.rank,
-            num_classes=args.classes_num,
-            num_tasks=args.tasks_num,
+            num_classes=args.num_classes,
+            num_tasks=args.num_tasks,
         )
     elif args.train_type == "full":
-        model.fc = nn.Linear(model.fc.in_features, args.classes_num)
+        model.fc = nn.Linear(model.fc.in_features, args.num_classes)
     elif args.train_type == "linear":
-        model.fc = nn.Linear(model.fc.in_features, args.classes_num)
+        model.fc = nn.Linear(model.fc.in_features, args.num_classes)
         for param in model.parameters():
             param.requires_grad = False
         for param in model.fc.parameters():
@@ -36,6 +37,3 @@ def load_vit_train_type(args):
         exit()
     print_trainable_size(f"vit_{args.train_type}", model.parameters())
     return model
-
-
-

@@ -65,7 +65,8 @@ def set_random_seed(seed: int) -> None:
     torch.cuda.manual_seed_all(seed)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
-    torch.use_deterministic_algorithms(True)
+    # torch.use_deterministic_algorithms(True)
+    torch.use_deterministic_algorithms(False)
     os.environ["PYTHONHASHSEED"] = str(seed)
     os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
     os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":16:8"
@@ -79,8 +80,8 @@ def train(
     loader,
     optimizer,
     scheduler,
-    known_class_num,
-    accmulate_class_num,
+    known_classes,
+    total_classes,
 ):
     loss_func = nn.CrossEntropyLoss().to(args.device)
     total_cls_loss = 0.0
@@ -88,27 +89,31 @@ def train(
     total_loss = 0.0
     correct, total = 0, 0
     net.train()
-    for _, datas in enumerate(loader):
-        _, images, labels = datas
-        images, labels = images.to(args.device), labels.to(args.device)
-
+    for i, data in enumerate(loader):
+        _, image, label = data
+        image, label = image.to(args.device), label.to(args.device)
+        mask = (label >= known_classes).nonzero().view(-1)
+        image = torch.index_select(image, 0, mask)
+        label = torch.index_select(label, 0, mask)
         loss = 0.0
         optimizer.zero_grad()
         with autocast(enabled=True):
             set_task_index(task_index)
-            cur_fea, pred = net(images)
-            pred[:, 0:known_class_num] = -float("inf")
-            pred[:, accmulate_class_num:] = -float("inf")
-            cls_loss = loss_func(pred, labels)
-            teacher_loss = 0.0
-            if not math.isclose(args.raitolossTeacher, 0):
-                if task_index != 0:
-                    set_task_index(task_index - 1)
-                    fea, _ = net(images)
-                    teacher_loss = (
-                        torch.norm(cur_fea - fea, p=2) * args.raitolossTeacher
-                    )
-            diff_loss = dif_loss(args, net, task_index) + teacher_loss
+            _, pred = net.forward(image)
+            pred[:, 0:known_classes] = -float("inf")
+            pred[:, total_classes:] = -float("inf")
+            cls_loss = loss_func(pred, label)
+
+            # teacher_loss = 0.0
+            # if not math.isclose(args.raitolossTeacher, 0):
+            #     if task_index != 0:
+            #         set_task_index(task_index - 1)
+            #         fea, _ = net(images)
+            #         teacher_loss = (
+            #             torch.norm(cur_fea - fea, p=2) * args.raitolossTeacher
+            #         )
+
+            diff_loss = dif_loss(args, net, task_index)  # + teacher_loss
             loss = cls_loss + diff_loss
 
         args.scaler.scale(loss).backward()
@@ -119,9 +124,10 @@ def train(
         total_cls_loss += cls_loss
         total_diff_loss += diff_loss
         total_loss += loss.item()
+
         _, preds_train = torch.max(pred, dim=1)
-        correct += preds_train.eq(labels.expand_as(preds_train)).cpu().sum()
-        total += len(labels)
+        correct += preds_train.eq(label.expand_as(preds_train)).cpu().sum()
+        total += len(label)
 
     total_loss /= len(loader)
     total_cls_loss /= len(loader)
@@ -140,8 +146,8 @@ def dif_loss(args, net, task_index):
         return 0
     else:
         for lora_idx in range(len(net.lora_layer)):
-            layer1_index = lora_idx * args.tasks_num * 2 + (task_index - 1) * 2
-            layer2_index = lora_idx * args.tasks_num * 2 + (task_index) * 2
+            layer1_index = lora_idx * args.num_tasks * 2 + (task_index - 1) * 2
+            layer2_index = lora_idx * args.num_tasks * 2 + (task_index) * 2
 
             diff_loss += (
                 inter_radio(args, lora_idx, len(net.lora_layer))
@@ -172,43 +178,40 @@ def inter_radio(args, index, lora_num):
         if math.isclose(args.loss_ratio_end, args.loss_ratio_start):
             return args.loss_ratio_end
         else:
-            return index / lora_num * (args.loss_ratio_end - args.loss_ratio_start)
+            return (
+                index / lora_num * (args.loss_ratio_end - args.loss_ratio_start)
+                + args.loss_ratio_start
+            )
 
 
 def layer_l2_diff(layer1, layer2):
     # 获取两个线性层之间的参数
-    parameters1 = torch.cat(
-        [param.view(-1) for param in layer1.parameters() if param.requires_grad]
-    )
-    parameters2 = torch.cat(
-        [param.view(-1) for param in layer2.parameters() if param.requires_grad]
-    )
+    parameters1 = torch.cat([param.view(-1) for param in layer1.parameters()])
+    parameters2 = torch.cat([param.view(-1) for param in layer2.parameters()])
 
     # 计算参数差异的L2范数
     return torch.norm(parameters1 - parameters2, p=2)
 
 
-# @torch.no_grad()
 def clustering(args, net, loader, path, known_class_num):
-    if args.enable_load_center and exists(path):
+    if exists(path):
         logging.info(f"load center data")
         centers = np.load(path)
     else:
         logging.info(f"search center data")
-        # net.eval()
         features = []
         for i, (_, inputs, targets) in enumerate(loader):
             inputs, targets = inputs.to(args.device), targets.to(args.device)
             mask = (targets >= known_class_num).nonzero().view(-1)
             inputs = torch.index_select(inputs, 0, mask)
             with torch.no_grad():
-                set_task_index(-1)
+                set_task_index(args.saveFea_loraId)
                 feature, _ = net(inputs)
                 features.append(feature.cpu())
         features = torch.cat(features, 0).cpu().detach().numpy()
-        clustering = KMeans(
-            n_clusters=args.n_clusters, random_state=args.seed, n_init=10
-        ).fit(features)
+        clustering = KMeans(n_clusters=args.n_clusters, random_state=0, n_init=10).fit(
+            features
+        )
         centers = clustering.cluster_centers_
-        np.save(path, centers)
+        # np.save(path, centers)
     return torch.tensor(centers).to(args.device)

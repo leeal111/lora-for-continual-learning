@@ -9,28 +9,31 @@ from lora import get_task_index
 def init_args(args):
 
     # input verify
-    if args.dataset_name is None:
-        args.dataset_name = splitext(basename(args.dataset_path))[0]
+    if args.dataset is None:
+        args.dataset = splitext(basename(args.data_path))[0]
     if args.pretrain_model_name is None:
         args.pretrain_model_name = splitext(basename(args.pretrain_model_path))[0]
-    assert args.classes_num >= args.tasks_num
-    if args.tasks_name is not None:
-        assert len(args.tasks_name) == args.tasks_num
+    assert args.num_classes >= args.num_tasks
+    if args.task_name is not None:
+        assert len(args.task_name) == args.num_tasks
     if args.tasks_lr_T is not None:
-        assert len(args.tasks_lr_T) == args.tasks_num
+        assert len(args.tasks_lr_T) == args.num_tasks
     if args.class_num_per_task_list is not None:
-        assert len(args.class_num_per_task_list) == args.tasks_num
-        assert sum(args.class_num_per_task_list) == args.classes_num
+        assert len(args.class_num_per_task_list) == args.num_tasks
+        assert sum(args.class_num_per_task_list) == args.num_classes
     else:
-        class_num_per_task = args.classes_num // args.tasks_num
-        if class_num_per_task * args.tasks_num != args.classes_num:
+        class_num_per_task = args.num_classes // args.num_tasks
+        if class_num_per_task * args.num_tasks != args.num_classes:
             class_num_per_task += 1
         args.class_num_per_task_list = []
-        while sum(args.class_num_per_task_list) + class_num_per_task < args.classes_num:
+        while sum(args.class_num_per_task_list) + class_num_per_task < args.num_classes:
             args.class_num_per_task_list.append(class_num_per_task)
-        offset = args.classes_num - sum(args.class_num_per_task_list)
+        offset = args.num_classes - sum(args.class_num_per_task_list)
         args.class_num_per_task_list.append(offset)
 
+    args.init_cls=args.num_classes // args.num_tasks
+    args.increment=args.num_classes // args.num_tasks
+    
     # make output diretory
     args.log_path = join(args.result_path, f"log")
     args.weight_path = join(args.result_path, f"weight")
@@ -40,14 +43,14 @@ def init_args(args):
     makedirs(args.center_path, exist_ok=True)
 
 
-def init_logging(result_path, file_name):
+def init_logging(result_path):
     logger = logging.getLogger("")
     if not logger.handlers:
         logging.basicConfig(
             level=logging.INFO,
             format="[%(asctime)s-%(levelname)s] %(message)s",
             datefmt="%y-%m-%d %H:%M:%S",
-            filename=join(result_path, f"{file_name}.log"),
+            filename=join(result_path, f"{time.strftime('%Y%m%d_%H%M%S')}.log"),
             filemode="w",
         )
         console = logging.StreamHandler()
@@ -62,12 +65,15 @@ def print_trainable_size(name, param):
 
 
 param_list = [
-    "dataset_name",
-    "train_type",
-    "tasks_num",
-    "rank",
+    "batch_size",
+    "saveFea_loraId",
+    "dataset",
     "seed",
+    "lr",
     "epochs",
+    "num_tasks",
+    "train_type",
+    "rank",
     "tasks_lr_T",
     "raitolossA",
     "raitolossB",
@@ -97,35 +103,12 @@ def tensor2numpy(x):
 
 
 def center_file_path(args, task_index):
-    infer_task_index = get_task_index()
     param_str = get_param_str(args, param_list)
-    if infer_task_index == -1:
-        unique_file_str = f"{infer_task_index}_{args.classes_num}_{task_index}.npy"
+    if args.saveFea_loraId == -1:
+        unique_file_str = f"{args.saveFea_loraId}_{args.n_clusters}_{task_index}.npy"
     else:
         unique_file_str = (
-            f"{infer_task_index}_{args.classes_num}_{param_str}_{task_index}.npy"
+            f"{args.saveFea_loraId}_{args.n_clusters}_{param_str}_{task_index}.npy"
         )
     file_name = join(args.center_path, unique_file_str)
     return file_name
-
-
-def argv_str(argv):
-    exlusion_list = [
-        "--result_path",
-        "--gpus",
-        "--workers_num",
-        "--pretrain_model_path",
-        "--dataset_path",
-        "--enable_load_weight"
-        "--enable_load_center"
-    ]
-    add_flag = True
-    new_list = []
-    for item in argv:
-        if item.startswith("--") and item not in exlusion_list:
-            add_flag = True
-        if item in exlusion_list:
-            add_flag = False
-        if add_flag:
-            new_list.append(item)
-    return "_".join(new_list).replace("-", "")
